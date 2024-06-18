@@ -1,0 +1,256 @@
+\documentclass[10pt, a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[italian]{babel}
+\usepackage[
+	a4paper,
+	top=2.5cm,
+	bottom=2cm,
+	left=2cm,
+	right=2cm
+]{geometry}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage[
+	colorlinks=true,
+	linkcolor=black,
+	urlcolor=blue
+]{hyperref}
+\usepackage{makecell}
+\usepackage{float}
+\usepackage[
+	format=plain,
+	labelfont=it,
+	textfont=it
+]{caption}
+\usepackage{ifxetex}
+\ifxetex
+	\usepackage{fontspec}
+	\setmainfont{Arial}
+\else
+	\usepackage{helvet}
+	\renewcommand{\familydefault}{\sfdefault}
+\fi
+\usepackage{amsmath}
+
+%\usepackage[inline]{showlabels} % debugging purposes
+
+\graphicspath{ {./pic} }
+
+\linespread{1} %interlinea
+
+\def\arraystretch{1.5}
+\renewcommand\theadfont{\bfseries}
+
+\newcommand{\Intmaketable}[4]{
+	\begin{table}[h!]
+	\centering
+	\begin{tabular}{#3}
+	#4
+	\end{tabular}
+	\caption{#2}
+	\label{#1}
+	\end{table}
+}
+
+\newcommand{\Intceqtable}[3]{
+	\Intmaketable{#1}{#2}{|l|l|}{
+	\hline
+	\thead{Parametro formale} & \thead{Classi d'equivalenza} \\
+	\hline
+	\hline
+	#3
+	\hline}
+}
+
+\newcommand{\Intbvtable}[3]{
+	\Intmaketable{#1}{#2}{|l|l|l|}{
+	\hline
+	\thead{Parametro formale} & \thead{Classe d'equivalenza} & \thead{Boundary value}\\
+	\hline
+	\hline
+	#3
+	\hline}
+}
+
+\newcommand{\Inttestctable}[3]{
+	\Intmaketable{#1}{#2}{|l|l|l|}{
+	\hline
+	\thead{Input} & \thead{Esito atteso} & \thead{Motivazione}\\
+	\hline
+	\hline
+	#3
+	\hline}
+}
+
+\newcommand{\Intceqcaption}[4]{Classi d'eq. per metodo #1 di #2, iter. #3 (#4)}
+\newcommand{\Intbvcaption}[4]{Boundary values per classi d'eq. metodo #1 di #2, iter #3 (#4)}
+\newcommand{\Inttestccaption}[4]{Casi di test per metodo #1 di #2, iter. #3 (#4)}
+
+%% BEGIN COMMANDS TO BE USED
+
+\newcommand{\gettablelabel}[5]{table:#1:#2:#3:iter#4:proj#5}
+
+\newcommand{\ceqtable}[5]{
+	\Intceqtable{\gettablelabel{ceq}{#1}{#2}{#3}{#4}}
+		{\Intceqcaption{#1}{#2}{#3}{#4}}
+		{#5}
+}
+
+\newcommand{\bvtable}[5]{
+	\Intbvtable{\gettablelabel{bv}{#1}{#2}{#3}{#4}}
+		{\Intbvcaption{#1}{#2}{#3}{#4}}
+		{#5}
+}
+
+\newcommand{\testctable}[5]{
+	\Inttestctable{\gettablelabel{testc}{#1}{#2}{#3}{#4}}
+		{\Inttestccaption{#1}{#2}{#3}{#4}}
+		{#5}
+}
+
+\newcommand{\getpicturelabel}[1]{picture:#1}
+
+\newcommand{\makepicture}[4]{
+	\begin{figure}[h!]
+	\centering
+	\includegraphics[width=#1, height=#2]{#3}
+	\caption{#4}
+	\label{\getpicturelabel{#3}}
+	\end{figure}
+}
+
+\newcommand{\ctrdfcovcaption}[4]{Contatori copertura dataflow (def-use) per metodo #1 di #2, iter. #3 (#4)}
+\newcommand{\alldfcovcaption}[4]{Vista completa per data-flow coverage (def-use) per metodo #1 di #2, iter. #3 (#4)}
+\newcommand{\methodcfcovcaption}[4]{Statement coverage e branch coverage per metodo #1 di #2, iter. #3 (#4)}
+\newcommand{\classcfcovcaption}[3]{Statement coverage e branch coverage per classe #1, iter. #2 (#3)}
+\newcommand{\mutclasscaption}[3]{Statistiche sulla mutazione dell'intera classe #1, iter. #2 (#3)}
+\newcommand{\mutmethodcaption}[4]{Mutanti killed (in verde più scuro), survived (in rosso più scuro) per il metodo #1 di #2, iter. #3 (#4)}
+\newcommand{\finishcodecaption}[4]{#2.#1, iter. #3 (#4)}
+
+\newcommand{\tcell}{\makecell[tl]}
+\newcommand{\newtrow}{\\ \hline}
+
+%% END OF COMMANDS TO BE USED
+
+\def\reporttitle{Report ISW2 modulo testing}
+\def\authorsname{Belli Stefano}
+\def\univcode{0350116}
+
+\title{\reporttitle}
+\author{\authorsname\;(\univcode)}
+\date{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+
+\fancyhead[LO,LE]{\authorsname}
+\fancyhead[RO,LE]{\univcode}
+\fancyfoot[CO,RE]{\thepage}
+
+\begin{document}
+
+	\maketitle
+	\thispagestyle{empty}
+
+	\tableofcontents
+
+	\section*{Obiettivo del documento}
+	L’obiettivo del documento è quello di illustrare tutte le attività svolte e le decisioni prese al fine ottenere una test suite
+	adeguata e robusta, relativamente ai due progetti BookKeeper e Storm (Apache Software Foundation). 
+	Per entrambi i progetti è stato impostato il framework di continuous integration GitHub Actions – con un file YAML, 
+	al cui interno viene specificato il SO, le “actions” che ad esempio si occupano di effettuare il checkout (git clone) del repo, 
+	installare una certa versione di java, e i comandi da eseguire nella VM/container istanziato, causato da un trigger (es. push di
+	commit al repo remote). 
+	Tramite l’ausilio di maven (in particolare i profili) e script scritti ad-hoc per il continuous integration, è stato possibile
+	testare calcolando anche le metriche di adeguatezza control-flow, data-flow e effettuare mutazioni sui test. 
+	I risultati vengono collezionati e caricati come artefatti della build 
+	(file html/xml di JaCoCo, PIT e ba-dua compressi in un archivio zip).
+
+	\pagebreak
+
+	\section{Progetto BookKeeper}
+	Il readme del repository \href{https://github.com/apache/bookkeeper}{upstream} ne fornisce 
+	la seguente definzione: \textit{“Apache BookKeeper is a scalable, 
+	fault-tolerant and low latency storage service optimized for append-only workloads”}. 
+	La documentazione di \href{https://bookkeeper.apache.org/archives/docs/master/bookkeeperOverview.html}{overview}
+	fornisce una visione a grandi linee del sistema: 
+	è necessario acquisirne almeno una minima conoscenza per individuare correttamente le classi da testare. 
+	Descrivere il sistema non è coerente con lo scopo di questo documento, qualora fosse necessario ai fini 
+	di motivare le scelte e le decisioni intraprese per individuare classi d’equivalenza, boundary analysis,\dots\,
+	si riprenderanno i concetti di BookKeeper.
+	Il source tree è diviso in vari artifact maven (ognuno ha un proprio pom.xml, la root ha il proprio pom.xml), 
+	si decide di testare le classi dell'artifact bookkeeper-server. \\
+	
+	\subsection{org.apache.bookkeeper.net.NetworkTopologyImpl}
+	Si decide di testare la classe perchè essendo BookKeeper un sistema di ledger \underline{distribuiti}, è di fondamentale importanza l'organizzazione
+	corretta dei "bookies" (server BookKeeper) secondo una certa topologia di rete. La documentazione dell'
+	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/NetworkTopology.html}{interfaccia NetworkTopology} specifica i
+	metodi che NetworkTopologyImpl deve necessariamente implementare. La classe implementor di nostro interesse (NetworkTopologyImpl) è documentata 
+	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/NetworkTopologyImpl.html}{qui} e si legge:
+	\textit{"The class represents a cluster of computer with a tree hierarchical network topology. 
+	For example, a cluster may be consists of many data centers filled with racks of computers. In a network topology, 
+	leaves represent data nodes (computers) and inner nodes represent switches/routers that manage traffic in/out of data centers or racks."}.
+	Per capire meglio, cercando nel web, ci si imbatte nella documentazione di 
+	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/client/EnsemblePlacementPolicy.html}{EnsemblePlacementPolicy} 
+	che contiene una spiegazione più dettagliata della "Network Topology": 
+	\textit{"The network topology is presenting a cluster of bookies in a tree hierarchical structure. 
+	For example, a bookie cluster may be consists of many data centers (aka regions) filled with racks of machines. 
+	In this tree structure, leaves represent bookies and inner nodes represent switches/routes that manage traffic in/out of regions or racks.
+	For example, there are 3 bookies in region `A`. They are `bk1`, `bk2` and `bk3`. And their network locations are /region-a/rack-1/bk1, 
+	/region-a/rack-1/bk2 and /region-a/rack-2/bk3."} e rende tutto più chiaro. Infatti, tornando all'
+	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/NetworkTopology.html}{interfaccia NetworkTopology}, vediamo che i metodi
+	manipolano la rete con i \href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/Node.html}{Node} e dalla documentazione di
+	quest'ultima interfaccia viene riportato come: \textit{"The interface defines a node in a network topology. A node may be a leave representing a data node 
+	or an inner node representing a datacenter or rack. Each data has a name and its location in the network is decided by a string with syntax similar to a file name. 
+	For example, a data node's name is hostname:port\# and if it's located at rack "orange" in datacenter "dog", the string representation of its network location is /dog/orange"}.
+	Quindi, concettualmente si ha una rete strutturata ad albero: 
+	\begin{itemize}
+		\item c'è il nodo root
+		\item i nodi interni (inner nodes) che rappresentano i router "associabili" a regions, datacenters, racks, \dots
+		\item le foglie dell'albero (leaves) che rappresentano i bookies veri e propri
+	\end{itemize}
+
+	Ogni nodo ha un nome e si può raggiungere specificandone il path: il carattere di separazione '/' indica i nodi di cui fare traversal prima
+	di raggiungere il nodo finale (il percorso parte dalla root e passa per i nodi specificati dalla stringa path, il percorso deve esistere nell'albero o viene creato, dettagli a seguire)
+
+	Se considerassimo ad esempio il ramo 
+	$$ \text{ROOT} \rightarrow \text{datacenter}_1 \rightarrow \text{rack}_1 \rightarrow \text{bookie}_1$$
+
+	\begin{itemize}	
+		\item /: indica la ROOT
+		\item /datacenter-1: indica l'inner node che rappresenta il router del datacenter-1
+		\item /datacenter-1/rack-1: indica l'inner node che rappresenta il router del rack-1 (via datacenter-1)
+		\item /datacenter-1/rack-1/bookie-1: indica il bookie (foglia, via datacenter-1 e rack-1)
+	\end{itemize}
+	
+	Qualsiasi altro path, in questo contesto è invalido (nel senso che per questo semplice albero, costituito da questo singolo ramo,
+	le uniche combinazioni per raggiungere qualsiasi nodo dell'albero sono queste 4).
+	Un nodo foglia non può avere come parent il nodo ROOT, all'atto pratico questo significa che il bookie server deve essere necessariamente
+	collocato in un rack/datacenter/\dots (collegato quindi a un router che rappresenti questo rack/datacenter/\dots), inserire un nodo tipo
+	\textit{"/bookie-1"} (essendo bookie$_1$ il server bookie/nodo foglia) non è consentito. Inserire invece \textit{"/rack-1/bookie-1"} va bene
+	, cosi come \textit{"/datacenter-1/rack-1/bookie-1"} e cosi via, incrementando l'altezza dell'albero\dots
+
+	\subsubsection{Prima iterazione}
+	Si decide di testare i metodi 
+	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/NetworkTopologyImpl.html#add(org.apache.bookkeeper.net.Node)}{add} e 
+	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/NetworkTopologyImpl.html#remove(org.apache.bookkeeper.net.Node)}{remove}
+	di \href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/NetworkTopologyImpl.html}{NetworkTopologyImpl} 
+	perchè sono ritenuti i più importanti in quanto permettono di manipolare la topologia di rete aggiungendo e togliendo nodi.
+	L'implementazione dell'interfaccia
+	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/Node.html}{Node} scelta è
+	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/BookieNode.html}{BookieNode} che oltretutto eredita da 
+	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/NodeBase.html}{NodeBase} 
+	che comunque implementa, ovviamente, Node. E un'altra sua implementazione è
+	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/NetworkTopologyImpl.InnerNode.html}{NetworkTopologyImpl.InnerNode} (che eredita da NodeBase).
+	\\
+	Dato che i test di unità vanno effettuati senza considerare l'implementazione e "mettendosi dalla parte dell'utilizzatore", viene scelta BookieNode perchè è l'implementazione di 
+	Node utilizzata dalle classi client che interagiscono con NetworkTopology (al di fuori del package org.apache.bookkeeper.net), mentre non vengono usate le altre due perchè appunto: 
+	NodeBase serve a implementare altri tipi di "Node" e InnerNode è una classe statica all'interno di NetworkTopologyImpl, oltretutto con visibilità package-private.
+	Comunque scegliere implementazioni piuttosto che altre non è di fondamentale importanza in quanto le NetworkTopology nei loro metodi accettano come parametri formali l'interfaccia Node
+	(ai quali tutte le implementazioni devono aderire).
+
+	\subsection{org.apache.bookkeeper.bookie.FileInfo}
+
+\end{document}
