@@ -10,5 +10,5 @@ jobs:
         uses: crazy-max/ghaction-chocolatey@v3
         with:
           args: install texlive -y
-      - name: Build using XeLaTeX
-        run: xelatex --version
+      - name: Build using XeTeX
+        run: xetex --version
