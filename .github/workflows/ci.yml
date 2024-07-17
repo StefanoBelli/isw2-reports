@@ -6,9 +6,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Choco install miktex
+      - name: Choco install TeX Live
         uses: crazy-max/ghaction-chocolatey@v3
         with:
-          args: install miktex -y
+          args: install texlive -y
       - name: Build using XeLaTeX
-        run: cd SwTesting && xelatex main.tex
+        run: xelatex --version
