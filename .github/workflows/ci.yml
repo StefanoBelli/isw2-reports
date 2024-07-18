@@ -13,8 +13,7 @@ jobs:
             hyperref
             xetex
             babel-italian
-            beamer
-            float
+            makecell
           
       - name: Check `tlmgr` version
         run: tlmgr --version
