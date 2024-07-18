@@ -27,10 +27,10 @@ jobs:
         run: xelatex --version
 
       - name: Compile SwTesting
-        run: cd SwTesting && xelatex main.tex
+        run: cd SwTesting && xelatex main.tex && xelatex main.tex
 
       - name: Compile ProjMgmt
-        run: cd ProjMgmt && xelatex main.tex
+        run: cd ProjMgmt && xelatex main.tex && xelatex main.tex
 
       - name: Rename ProjMgmt file
         run: mv ProjMgmt/main.pdf ProjMgmt/pres_0350116.pdf
