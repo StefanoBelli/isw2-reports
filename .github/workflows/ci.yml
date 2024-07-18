@@ -14,6 +14,7 @@ jobs:
             xetex
             babel-italian
             beamer
+            float
           
       - name: Check `tlmgr` version
         run: tlmgr --version
