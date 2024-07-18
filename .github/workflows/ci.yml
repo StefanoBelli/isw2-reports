@@ -12,6 +12,8 @@ jobs:
             cleveref
             hyperref
             xetex
+            babel-italian
+            beamer
           
       - name: Check `tlmgr` version
         run: tlmgr --version
