@@ -15,6 +15,7 @@ jobs:
             babel-italian
             makecell
             etoolbox
+            float
           
       - name: Check `tlmgr` version
         run: tlmgr --version
