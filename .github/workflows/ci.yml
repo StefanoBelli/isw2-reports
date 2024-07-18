@@ -16,6 +16,7 @@ jobs:
             makecell
             etoolbox
             float
+            collection-xetex
           
       - name: Check `tlmgr` version
         run: tlmgr --version
