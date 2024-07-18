@@ -17,6 +17,7 @@ jobs:
             etoolbox
             float
             caption
+            fontspec
           
       - name: Check `tlmgr` version
         run: tlmgr --version
