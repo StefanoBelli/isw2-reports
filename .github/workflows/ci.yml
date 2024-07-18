@@ -17,3 +17,9 @@ jobs:
         run: tlmgr --version
       - name: Check `xelatex` version
         run: xelatex --version
+
+      - name: Compile SwTesting
+        run: cd SwTesting && xelatex main.tex
+
+      - name: Compile ProjMgmt
+        run: cd ProjMgmt && xelatex main.tex
