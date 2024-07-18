@@ -1,3 +1,4 @@
+name: Build LaTeX document
 on: [push]
 jobs:
   build:
@@ -30,3 +31,16 @@ jobs:
 
       - name: Compile ProjMgmt
         run: cd ProjMgmt && xelatex main.tex
+
+      - name: Rename ProjMgmt file
+        run: mv ProjMgmt/main.pdf ProjMgmt/pres_0350116.pdf
+      - name: Rename SwTesting file
+        run: mv SwTesting/main.pdf SwTesting/report_0350116.pdf
+      
+      - name: Upload PDF file
+        uses: actions/upload-artifact@v4
+        with:
+          name: PDFs
+          path: |
+            ProjMgmt/pres_0350116.pdf
+            SwTesting/report_0350116.pdf
