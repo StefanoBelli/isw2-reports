@@ -1,5 +1,6 @@
 \documentclass[10pt, a4paper]{article}
 
+\usepackage{setspace}
 \usepackage[utf8]{inputenc}
 \usepackage[italian]{babel}
 \usepackage[
@@ -27,6 +28,7 @@
 \ifxetex
 	\usepackage{fontspec}
 	\setmainfont{Arial}
+	\typeout{--> --> --> XeTeX detected: using Arial font <-- <-- <--}
 \else
 	\usepackage{helvet}
 	\renewcommand{\familydefault}{\sfdefault}
@@ -37,7 +39,7 @@
 
 \graphicspath{ {./pic} }
 
-\linespread{1} %interlinea
+\singlespacing %interlinea
 
 \def\arraystretch{1.5}
 \renewcommand\theadfont{\bfseries}
@@ -89,6 +91,16 @@
 
 %% BEGIN COMMANDS TO BE USED
 
+%
+% parameters
+%  #1: target method
+%  #2: target class
+%  #3: num of iter
+%  #4: proj name
+%  #5: table content (see commands tcell, newtrow)
+%
+
+% use this to reference table in text
 \newcommand{\gettablelabel}[5]{table:#1:#2:#3:iter#4:proj#5}
 
 \newcommand{\ceqtable}[5]{
@@ -109,7 +121,16 @@
 		{#5}
 }
 
+% use this to reference pictures in text
 \newcommand{\getpicturelabel}[1]{picture:#1}
+
+%
+% parameters:
+%  #1: width
+%  #2: height
+%  #3: file
+%  #4: caption (see ctrdfcovcaption, alldfcovcaption, ...)
+%
 
 \newcommand{\makepicture}[4]{
 	\begin{figure}[h!]
@@ -120,14 +141,16 @@
 	\end{figure}
 }
 
+% use these to generate appropriate caption for pictures
 \newcommand{\ctrdfcovcaption}[4]{Contatori copertura dataflow (def-use) per metodo #1 di #2, iter. #3 (#4)}
 \newcommand{\alldfcovcaption}[4]{Vista completa per data-flow coverage (def-use) per metodo #1 di #2, iter. #3 (#4)}
 \newcommand{\methodcfcovcaption}[4]{Statement coverage e branch coverage per metodo #1 di #2, iter. #3 (#4)}
 \newcommand{\classcfcovcaption}[3]{Statement coverage e branch coverage per classe #1, iter. #2 (#3)}
 \newcommand{\mutclasscaption}[3]{Statistiche sulla mutazione dell'intera classe #1, iter. #2 (#3)}
-\newcommand{\mutmethodcaption}[4]{Mutanti killed (in verde più scuro), survived (in rosso più scuro) per il metodo #1 di #2, iter. #3 (#4)}
-\newcommand{\finishcodecaption}[4]{#2.#1, iter. #3 (#4)}
+\newcommand{\mutmethodcaption}[6]{Mutanti (killed #5 su #6 totali) per il metodo #1 di #2, iter. #3 (#4)}
+\newcommand{\finishcodecaption}[4]{codice di test per metodo #1 di #2 iter. #3 (#4)}
 
+% use these to build table
 \newcommand{\tcell}{\makecell[tl]}
 \newcommand{\newtrow}{\\ \hline}
 
@@ -149,6 +172,14 @@
 \fancyhead[RO,LE]{\univcode}
 \fancyfoot[CO,RE]{\thepage}
 
+% use these when mentioning projects
+\def\bookkeeper{BookKeeper}
+\def\storm{Storm}
+\def\asf{Apache Software Foundation}
+\newcommand{\ceq}[1]{\{#1\}}
+
+\setlength{\parindent}{0pt}
+
 \begin{document}
 
 	\maketitle
@@ -158,19 +189,19 @@
 
 	\section*{Obiettivo del documento}
 	L’obiettivo del documento è quello di illustrare tutte le attività svolte e le decisioni prese al fine ottenere una test suite
-	adeguata e robusta, relativamente ai due progetti BookKeeper e Storm (Apache Software Foundation). 
+	adeguata e robusta, relativamente ai due progetti \bookkeeper e \storm (\asf). 
 	Per entrambi i progetti è stato impostato il framework di continuous integration GitHub Actions – con un file YAML, 
 	al cui interno viene specificato il SO, le “actions” che ad esempio si occupano di effettuare il checkout (git clone) del repo, 
-	installare una certa versione di java, e i comandi da eseguire nella VM/container istanziato, causato da un trigger (es. push di
+	installare una certa versione di java, e i comandi da eseguire nella VM/container istanziato (a causa di un trigger, es. push di
 	commit al repo remote). 
 	Tramite l’ausilio di maven (in particolare i profili) e script scritti ad-hoc per il continuous integration, è stato possibile
 	testare calcolando anche le metriche di adeguatezza control-flow, data-flow e effettuare mutazioni sui test. 
-	I risultati vengono collezionati e caricati come artefatti della build 
+	I risultati vengono collezionati e caricati come artefatti della build
 	(file html/xml di JaCoCo, PIT e ba-dua compressi in un archivio zip).
 
 	\pagebreak
 
-	\section{Progetto BookKeeper}
+	\section{Progetto \bookkeeper}
 	Il readme del repository \href{https://github.com/apache/bookkeeper}{upstream} ne fornisce 
 	la seguente definzione: \textit{“Apache BookKeeper is a scalable, 
 	fault-tolerant and low latency storage service optimized for append-only workloads”}. 
@@ -179,13 +210,13 @@
 	è necessario acquisirne almeno una minima conoscenza per individuare correttamente le classi da testare. 
 	Descrivere il sistema non è coerente con lo scopo di questo documento, qualora fosse necessario ai fini 
 	di motivare le scelte e le decisioni intraprese per individuare classi d’equivalenza, boundary analysis,\dots\,
-	si riprenderanno i concetti di BookKeeper.
+	si riprenderanno i concetti di \bookkeeper.
 	Il source tree è diviso in vari artifact maven (ognuno ha un proprio pom.xml, la root ha il proprio pom.xml), 
 	si decide di testare le classi dell'artifact bookkeeper-server. \\
 	
 	\subsection{org.apache.bookkeeper.net.NetworkTopologyImpl}
-	Si decide di testare la classe perchè essendo BookKeeper un sistema di ledger \underline{distribuiti}, è di fondamentale importanza l'organizzazione
-	corretta dei "bookies" (server BookKeeper) secondo una certa topologia di rete. La documentazione dell'
+	Si decide di testare la classe perchè essendo \bookkeeper un sistema di ledger \underline{distribuiti}, è di fondamentale importanza l'organizzazione
+	corretta dei "bookies" (server \bookkeeper) secondo una certa topologia di rete. La documentazione dell'
 	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/NetworkTopology.html}{interfaccia NetworkTopology} specifica i
 	metodi che NetworkTopologyImpl deve necessariamente implementare. La classe implementor di nostro interesse (NetworkTopologyImpl) è documentata 
 	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/NetworkTopologyImpl.html}{qui} e si legge:
@@ -212,7 +243,7 @@
 		\item le foglie dell'albero (leaves) che rappresentano i bookies veri e propri
 	\end{itemize}
 
-	Ogni nodo ha un nome e si può raggiungere specificandone il path: il carattere di separazione '/' indica i nodi di cui fare traversal prima
+	Ogni nodo ha un nome e si può raggiungere specificandone il path: il carattere di separazione '/' indica i nodi da visitare prima
 	di raggiungere il nodo finale (il percorso parte dalla root e passa per i nodi specificati dalla stringa path, il percorso deve esistere nell'albero o viene creato, dettagli a seguire)
 
 	Se considerassimo ad esempio il ramo 
@@ -248,9 +279,236 @@
 	Dato che i test di unità vanno effettuati senza considerare l'implementazione e "mettendosi dalla parte dell'utilizzatore", viene scelta BookieNode perchè è l'implementazione di 
 	Node utilizzata dalle classi client che interagiscono con NetworkTopology (al di fuori del package org.apache.bookkeeper.net), mentre non vengono usate le altre due perchè appunto: 
 	NodeBase serve a implementare altri tipi di "Node" e InnerNode è una classe statica all'interno di NetworkTopologyImpl, oltretutto con visibilità package-private.
-	Comunque scegliere implementazioni piuttosto che altre non è di fondamentale importanza in quanto le NetworkTopology nei loro metodi accettano come parametri formali l'interfaccia Node
-	(ai quali tutte le implementazioni devono aderire).
+	Comunque scegliere implementazioni piuttosto che altre non è di fondamentale importanza in quanto le NetworkTopology nei loro metodi accettano come parametri formali l'interfaccia Node.
+	
+	\textbf{Per il metodo add}: in tabella 
+	\ref{\gettablelabel{ceq}{add}{NetworkTopologyImpl}{1}{\bookkeeper}}
+	le classi d'equivalenza sono state scelte sulla base delle considerazioni fatte fino al paragrafo
+	precedente sulla topologia di rete imposta da \bookkeeper. In Java, qualsiasi riferimento ad
+	un'oggetto può assumere valore null (tranne per i tipi primitivi), 
+	che sarà quindi un valore da tenere quasi sempre in 
+	considerazione dato che per alcuni metodi può avere un certo significato e/o conseguenze 
+	sull'esecuzione: se ad esempio un qualsiasi metodo assume che un "object" passato come parametro 
+	formale non può essere null - mentre a runtime gli viene effettivamente passato - può verificarsi 
+	una NullPointerException (ad esempio). Alternativamente, i metodi possono gestire la situazione
+	di parametro attuale null (per esempio un ipotetico metodo che ha a che fare con il filesystem
+	e deve restituire il path assoluto a una directory - con null si potrebbe pensare di indicare la 		
+	current working directory senza che l'utilizzatore debba chiamare ulteriori metodi - 
+	FileSystem.getAbsolutePath(null)). La tabella \ref{\gettablelabel{bv}{add}{NetworkTopologyImpl}{1}
+	{\bookkeeper}} specifica i valori al bordo: in questo caso i nodi con path (non) valido, che (non) 
+	passano il check di \underline{validazione} di NetworkTopologyImpl, sono molteplici, ma il valore al 
+	bordo viene scelto per semplicità del percorso. 
+	La tabella \ref{\gettablelabel{testc}{add}{NetworkTopologyImpl}{1}{\bookkeeper}} contiene i casi
+	di test generati a partire da un approccio unidimensionale. In tabella sono anche presentati
+	gli esiti attesi con la motivazione - se l'esito atteso è:
+	\begin{itemize}
+		\item \textit{Nessuna variazione rispetto alla topologia attuale}: ci si aspetta che la 
+		topologia prima e dopo l'esecuzione del metodo del SUT rimanga inalterata - nel nostro caso, 
+		che la add avviene in una topologia di rete vuota, dopo l'esecuzione di add, ci si aspetta che 
+		siano presenti 0 "racks" e 0 "leaves" (bookies) e il metodo del SUT che deve restituire il 
+		riferimento al nodo in base al path cercato (\textit{"getNode"}) deve restituire null
+		\item \textit{Nessuna eccezione lanciata}: una eventuale eccezione (che sia checked o unchecked)
+		inaspettata causa fallimento immediato dell'esecuzione del test.
+		\item \textit{IllegalArgumentException lanciata}: mediante l'uso di \textit{assertThrows} di
+		JUnit, ci si aspetta il lancio di una particolare eccezione da parte del metodo del SUT. Il
+		non-lancio causa il fallimento immediato dell'asserzione e quindi dell'esecuzione del test.
+		\item \textit{Aggiunta con successo del nodo alla rete}: sempre considerando che partiamo
+		da una topologia di rete vuota - si verifica che siano presenti, dopo l'esecuzione del metodo
+		del SUT, 1 "rack" e 1 "leave" (bookie), in più il metodo \textit{getNode} del SUT deve 
+		restituire una reference all'oggetto che sia uguale a quella del nodo passato ad add.
+	\end{itemize}
+	
+	E' stato aggiunto un caso di test in più rispetto al boundary value della classe d'equivalenza di
+	\{nodo con path valido\} al fine di testare inserimento del nodo ad un altezza diversa.
+	
+	Le condizioni di "nessuna variazione" e "IllegalArgumentException lanciata" vengono usate insieme
+	in un caso: vengono verificate entrambe.	
+	
+	Nell'input, dove vengono specificati i parametri passati, viene usato il metodo buildNode che è:
+	
+	\textit{ BookieNode buildNode(String netLoc, String bookie) \{ return new
+	BookieNode(BookieId.parse(bookie), netLoc); \} }
+	
+	In figura \ref{\getpicturelabel{bk/code-1-add-NetworkTopologyImpl-1}} è riportata l'implementazione del
+	test parametrizzato.
+	
+	\textbf{Per il metodo remove}: in tabella \ref{\gettablelabel{ceq}{remove}{NetworkTopologyImpl}{1}
+	{\bookkeeper}}, le classi d'equivalenza sono state scelte pensando al fatto che un nodo per essere
+	rimosso deve essere presente (è importante la verifica della presenza del nodo), non è quindi tanto 
+	importante se il nodo passato abbia un path valido
+	o meno - nella peggiore delle situazioni il nodo non viene trovato anche se il path è invalido (add 
+	effettua validazione - se fallisce, il nodo non verrà inserito) e quindi non c'è nessuna 
+	eliminazione.
+	In tabella \ref{\gettablelabel{bv}{remove}{NetworkTopologyImpl}{1}{\bookkeeper}} sono stati scelti i valori al
+	bordo con lo stesso criterio di add.
+	La tabella \ref{\gettablelabel{testc}{remove}{NetworkTopologyImpl}{1}{\bookkeeper}} specifica i casi di test:
+	le condizioni di esito atteso sono simili. Per eseguire il secondo test case, è stato necessario
+	prima inserire nel SUT il nodo da rimuovere. L'esito atteso \textit{"rimozione con successo
+	del nodo dalla rete"} prevede la verifica che dopo l'add sia presente nella rete 1 rack e 1 leave 
+	(getNode sul path deve restituire come riferimento lo stesso oggetto Node passato ad add)
+	quindi, dopo la delete, in rete devono esserci 0 rack, 0 leave e getNode sul path deve restiutire 
+	null. Il codice del test case è riportato in figura \ref{\getpicturelabel{bk/code-1-remove-NetworkTopologyImpl-1}}
+	e \ref{\getpicturelabel{bk/code-2-remove-NetworkTopologyImpl-1}}.
+	
+	Prima dell'esecuzione del metodo di add o remove (a seconda del metodo sottto test), ci si accerta 	
+	che la topologia contenga un nodo o sia vuota (a seconda del test case da eseguire), come indicato
+	dagli esiti attesi (es. \textit{"...ci si aspetta di partire da una topologia di rete vuota"}, 
+	oppure \textit{"rimozione di un nodo effettivamente presente nella rete..."})
+		
+	Nella figura \ref{\getpicturelabel{bk/controlflow-NetworkTopologyImpl-1}} sono riportate la
+	control flow coverage e la branch coverage di tutta la classe NetworkTopologyImpl: in particolare,
+	in figura \ref{\getpicturelabel{bk/controlflow-add-NetworkTopologyImpl-1}} per il metodo add e in
+	figura \ref{\getpicturelabel{bk/controlflow-remove-NetworkTopologyImpl-1}} per il metodo remove.
+	
+	In figura \ref{\getpicturelabel{bk/mutation-NetworkTopologyImpl-1}} è riportato un summary degli
+	score sulla mutazione dell'intera classe: in figura \ref{\getpicturelabel{bk/mutation-add-NetworkTopologyImpl-1}} 
+	e \ref{\getpicturelabel{bk/mutation-remove-NetworkTopologyImpl-1}} vengono
+	specificate le righe nelle quali PITest ha eseguito delle modifiche (mutanti) e quali di queste 
+	modifiche sono state rilevate (killed, in verde) e quali no (in rosso). Nella caption viene 
+	riportato
+	il numero di mutanti killed su numero di mutanti totali. Bisogna considerare che se la riga è rossa
+	e il numero riportato a sinistra sul numero di mutanti applicati alla riga è $>$ 1, allora bisogna
+	controllare bene perchè se almeno uno è sopravvissuto, la riga diventa rossa (non andremmo a contare
+	potenziali mutanti killed).
+	
+	In figura \ref{\getpicturelabel{bk/dataflow-add-NetworkTopologyImpl-1}} e 
+	\ref{\getpicturelabel{bk/dataflow-remove-NetworkTopologyImpl-1}} 
+	è riportata in dettaglio la data flow coverage per i metodi add e remove.
+	
+	\subsubsection{Seconda iterazione}
+	In generale, osserviamo come sia la control flow coverage (70\%), la data flow coverage (24 def-use 
+	coperte su 32 totali) e il mutation
+	score (6 mut. killed su 8 totali) del metodo remove siano molto migliori dei rispettivi del metodo
+	add (52\%, 30 def-use coperte su 58 totali, 8 mut. killed su 14 totali).
+	
+	Dato che le metriche di adeguatezza dei test e il mutation score non sono soddisfacenti su add,
+	si decide di progettare ulteriori test case ai fini del miglioramento e del rafforzamento della test
+	suite. Ma non è l'unico motivo: i test sul metodo add eseguiti fino ad ora non hanno tenuto conto
+	di ulteriori situazioni che il metodo deve gestire - sono stati eseguiti test case su una rete
+	non popolata e che non ha quindi permesso la verifica dell'esito di inserimenti in ulteriori 
+	casistiche, importanti e decisamente più realistiche 
+	(es. che succede se il nodo che si prova a inserire è già nella rete?).
+	
+	Per quanto riguarda il metodo remove, nonostante le metriche siano soddisfacenti, per lo stesso
+	motivo di add, si decide di proseguire con un ulteriore iterazione di stesura dei test case:
+	che succede se per esempio si prova ad eliminare un rack invece che un bookie (in termini di alberi 
+	- si prova ad eliminare un nodo che non sia una foglia)?
+	
+	Data l'importanza della classe, si decide di testare anche i metodi 
+	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/NetworkTopologyImpl.html#getDistance(org.apache.bookkeeper.net.Node,org.apache.bookkeeper.net.Node)}
+	{getDistance} e 
+	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/NetworkTopologyImpl.html#pseudoSortByDistance(org.apache.bookkeeper.net.Node,org.apache.bookkeeper.net.Node[])}
+	{pseudoSortByDistance}
+	- la scelta è dettata dal fatto che \bookkeeper\;è un sistema distribuito e quindi i metodi in questione svolgono un ruolo cruciale
+	nel cercare, ad esempio, un bookie a distanza minima che rispetti certi criteri per replicare le entries - se il metodo pseudoSortByDistance
+	funziona erroneamente si avrà un peggioramento delle prestazioni (la topologia rispecchia la distanza fisica tra i bookies - risultati errati di pseudoSortByDistance corrispondono a diminuzione del rate di trasferimento dati)
+	
+	
+	
+	%NELL'ITERAZIONE 2 prova a usare NodeBase: specifica bookieid error per bookiename invalido e 
+	%ulteriori test - 
+	
+	%NELL'ITERAZIONE 2 specifica che add andava fatto anche su rete già popolata (es. aggiunta nodo
+	%già esistente e rispetto della topologia attuale)
+	
+	%NELL'ITERAZIONE 2 specifica prova remove su path invalidi (anche su rete già popolata - es prova
+	%a eliminare inner node)
 
 	\subsection{org.apache.bookkeeper.bookie.FileInfo}
+	
+	\newpage
+	\section{Tabelle, figure e code listings}
+	
+	\ceqtable{add}{NetworkTopologyImpl}{1}{\bookkeeper}{
+			\tcell{node} & \tcell{\ceq{null} \\ \ceq{nodo con path invalido} \\ \ceq{nodo con path valido} }
+		\newtrow
+	}
+	
+	\bvtable{add}{NetworkTopologyImpl}{1}{\bookkeeper}{
+			\tcell{node} & \tcell{\ceq{null}} & \tcell{null}
+		\newtrow
+			\tcell{node} & \tcell{\ceq{nodo con path invalido}} & \tcell{Node("/bookie-1")}
+		\newtrow
+			\tcell{node} & \tcell{\ceq{nodo con path valido}} & \tcell{Node("/rack-1/bookie-1")}
+		\newtrow
+	}
+	
+	\testctable{add}{NetworkTopologyImpl}{1}{\bookkeeper}{
+			\tcell{null} & \tcell{Nessuna variazione rispetto\\ alla topologia attuale,\\ nessuna 
+			eccezione lanciata} & \tcell{Specifica della documentazione:\\ si prevede la gestione del 
+			caso\\ in cui node sia null}
+		\newtrow
+			\tcell{buildNode("/rack-1","bookie-1")} & \tcell{Aggiunta con successo del nodo\\ alla rete} 
+			& \tcell{Il nodo è una foglia (un server bk)\\ raggiungibile da /rack-1}
+		\newtrow
+			\tcell{buildNode("/","bookie-2")} & \tcell{Nessuna variazione rispetto \\ alla topologia 
+			attuale, \\IllegalArgumentException viene\\ lanciata} & 
+			\tcell{Il nodo è una foglia (un server bk)\\ ma non è raggiunta da un rack \\
+			(è un requisito che il nodo foglia\\ non abbia come parent la root) }
+		\newtrow
+			\tcell{buildNode("/dc-1/rack-1", "bookie-3")} & \tcell{Aggiunta con successo del nodo\\ alla 
+			rete} & \tcell{Il nodo è una foglia (un server bk)\\ raggiungibile da /dc-1/rack-1}
+		\newtrow
+	}
+	
+	\ceqtable{remove}{NetworkTopologyImpl}{1}{\bookkeeper}{
+			\tcell{node} & \tcell{\ceq{null}, \\ \ceq{nodo con path non presente in rete},\\ \ceq{nodo 
+			con path presente in rete}}
+		\newtrow
+	}
+	
+	\bvtable{remove}{NetworkTopologyImpl}{1}{\bookkeeper}{
+			\tcell{node} & \tcell{\ceq{null}} & \tcell{null} 
+		\newtrow
+			\tcell{node} & \tcell{\ceq{nodo con path non presente in rete}} & \tcell{Node("/rack-1/bookie-1")}
+		\newtrow
+			\tcell{node} & \tcell{\ceq{nodo con path presente in rete}} & \tcell{Node("/rack-1/bookie-2")}
+		\newtrow
+	}
+	
+	\testctable{remove}{NetworkTopologyImpl}{1}{\bookkeeper}{
+			\tcell{null} & \tcell{Nessuna variazione rispetto\\ alla topologia attuale,\\ nessuna 
+			eccezione lanciata} & \tcell{Specifica della documentazione:\\ si prevede la gestione del 
+			caso\\ in cui node sia null}
+		\newtrow
+			\tcell{buildNode("/rack-1","bookie-1")} & \tcell{Rimozione con successo del nodo\\ dalla rete} & \tcell{Il nodo è una foglia (un server bk)\\ raggiungibile da /rack-1\\ aggiunto in precedenza}
+		\newtrow
+			\tcell{buildNode("/rack-1","bookie-2")} & \tcell{Nessuna variazione rispetto\\ alla topologia attuale,\\ nessuna eccezione lanciata} & \tcell{Il nodo è una foglia (un server bk)\\ raggiungibile da /rack-1\\ MA NON aggiunto in precedenza}
+		\newtrow
+	}	
+	
+	\makepicture{17cm}{1.15cm}{bk/controlflow-NetworkTopologyImpl-1}
+				{\classcfcovcaption{NetworkTopologyImpl}{1}{\bookkeeper}}
+				
+	\makepicture{17cm}{0.75cm}{bk/controlflow-add-NetworkTopologyImpl-1}
+				{\methodcfcovcaption{add}{NetworkTopologyImpl}{1}{\bookkeeper}}
+				
+	\makepicture{17cm}{0.75cm}{bk/controlflow-remove-NetworkTopologyImpl-1}
+				{\methodcfcovcaption{remove}{NetworkTopologyImpl}{1}{\bookkeeper}}
+				
+	\makepicture{17cm}{1.5cm}{bk/mutation-NetworkTopologyImpl-1}
+				{\mutclasscaption{NetworkTopologyImpl}{1}{\bookkeeper}}
+				
+	\makepicture{17cm}{15cm}{bk/mutation-add-NetworkTopologyImpl-1}
+				{\mutmethodcaption{add}{NetworkTopologyImpl}{1}{\bookkeeper}{8}{14}}
+	
+	\makepicture{17cm}{10cm}{bk/mutation-remove-NetworkTopologyImpl-1}
+				{\mutmethodcaption{remove}{NetworkTopologyImpl}{1}{\bookkeeper}{6}{8}}
+				
+	\makepicture{13cm}{23cm}{bk/dataflow-add-NetworkTopologyImpl-1}
+				{\alldfcovcaption{add}{NetworkTopologyImpl}{1}{\bookkeeper}}
+				
+	\makepicture{13cm}{15cm}{bk/dataflow-remove-NetworkTopologyImpl-1}
+				{\alldfcovcaption{remove}{NetworkTopologyImpl}{1}{\bookkeeper}}
+				
+	\makepicture{17cm}{16cm}{bk/code-1-add-NetworkTopologyImpl-1}
+				{Parametri e metodo: \finishcodecaption{add}{NetworkTopologyImpl}{1}{\bookkeeper}}
+				
+	\makepicture{16cm}{10cm}{bk/code-1-remove-NetworkTopologyImpl-1}
+				{Parametri e metodo: \finishcodecaption{remove}{NetworkTopologyImpl}{1}{\bookkeeper}}
+				
+	\makepicture{15cm}{12cm}{bk/code-2-remove-NetworkTopologyImpl-1}
+				{Metodi statici per evitare eccessiva duplicazione di codice di verifica:
+				\finishcodecaption{remove}{NetworkTopologyImpl}{1}{\bookkeeper}}
 
 \end{document}
