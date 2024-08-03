@@ -20,6 +20,7 @@ jobs:
             caption
             fontspec
             beamer
+            setspace
           
       - name: Check `tlmgr` version
         run: tlmgr --version
