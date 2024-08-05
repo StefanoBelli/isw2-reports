@@ -485,11 +485,101 @@
 	oggetto di cui si è tentato l'inserimento). Nei test di add della prima iterazione, quest'aspetto è 
 	indifferente, dato che la topologia è vuota.
 	
-	\textbf{Per il metodo getDistance}
+	\textbf{Per il metodo getDistance}: In tabella 
+	\ref{\gettablelabel{ceq}{getDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
+	sono presenti le classi d'equivalenza individuate, in tabella 
+	\ref{\gettablelabel{bv}{getDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
+	i boundary values, 
+	\ref{\gettablelabel{testc}{getDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
+	i test case generati.
+	Le classi d'equivalenza sono state generate pensando agli utilizzi di
+	getDistance e la sua gestione di parametri incorretti (un utilizzatore
+	potrebbe per errore passare una reference null o costruire un nodo non
+	appartenente alla rete e infatti è stato documentato come
+	si comporta il metodo in quest'ultimo caso, quindi va verificato per 
+	assicurarsi un corretto reporting all'utente). 
+	I boundary values sono generati a partire da una
+	rete prepopolata sulla quale eseguire il metodo per testarlo.
+	Data la possibilità che \bookkeeper\; offre di gestire una rete gerarchica,
+	potenzialmente su scala geografica, si è preferito optare per una rete 
+	abbastanza alta da ricoprire questo caso di utilizzo (si pensi a grandi
+	multinazionali).
+	Per quanto riguarda i test case generati, è stato usato un approccio 
+	multidimensionale e la differenza tra getNode e buildNode negli input, è
+	che getNode viene usato sulla rete prepopolata per ottenere il riferimento
+	al nodo di interesse, buildNode è un metodo statico che costruisce un nuovo
+	nodo. Quando è presente buildNode, il nodo con quel path non è in rete (
+	getNode restituirebbe null). Quello che è realmente di interesse è la distanza
+	tra i bookies che interagiscono tra loro, e non tra i router, quindi,
+	calcoliamo la distanza tra \textit{/europe/it/.../bookie-1} e 
+	\textit{/europe/de/.../bookie-6} e cosi via\dots L'algoritmo per il calcolo 
+	della distanza è descritto nella documentazione di getDistance: basta 
+	individuare il common ancestor di entrambi i nodi e sommare il numero di hop 
+	per arrivare da un nodo a un altro: per \textit{/italy/rack-1/bookie-1} e 
+	\textit{/italy/rack-1/bookie-2} ad esempio, la distanza tra i due bookie è 2 
+	perchè da \textit{bookie-1} \underline{vado} in \textit{rack-1} e poi da 
+	\textit{rack-1} \underline{vado} in \textit{bookie-2}, non c'è bisogno di 
+	effettuare ulteriori salti, essendo collegati allo stesso router/rack
+	(tralasciando definizioni specifiche di rete). 
+	Sulla base di questo algoritmo sono stati elaborati i valori di ritorno
+	dei casi di test (dei nodi appartenenti alla rete). Negli altri casi,
+	è stata seguita la documentazione dove possibile (ritorno di
+	Integer.MAX\_VALUE) e sono state effettuate assunzioni dove non 
+	specificato (gestione di null references).
+	Gli esiti attesi sono auto-esplicativi (ritorno valore 0 e nessuna eccezione
+	lanciata indicano una gestione passiva da parte del metodo di argomenti attuali non validi.)
+	Purtroppo i test dal numero 2 al numero 8 falliscono: il metodo non gestisce
+	le null reference come ci si aspetterebbe (viene lanciata
+	NullPointerException) e non ritorna MAX\_VALUE se uno dei nodi non appartiene
+	alla rete. Però c'è da precisare che nonostante nella reliability calcolata
+	si considerino tutte le combinazioni dei valori usati come input in modo
+	uniforme, è molto poco probabile che le combinazioni dei test falliti vengano
+	effettivamente usate, il metodo, nella sua "configurazione" di utilizzo più
+	probabile (entrambi i nodi appartenenti alla rete) passa tutti i test.
 	
-	GETDISTANCE: AGGIUNGI CASI DI TEST NULL (COMBINAZIONI) E NODI APPARTENENTI/NON APPARTENENTI (DOCS)
-	PSEUDOSORTBYDISTANCE: STESSA COSA, IN PIU SPECIFICA CHE IN ENTRAMBI I CASI I TEST GENERATI RIGUARDANO
-	I BOOKIES, DATA LA NATURA DEI METODI E DI BK
+	\textbf{Per il metodo pseudoSortByDistance}: In tabella 
+	\ref{\gettablelabel{ceq}{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
+	sono presenti le classi d'equivalenza individuate, in tabella 
+	\ref{\gettablelabel{bv}{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
+	i boundary values, 
+	\ref{\gettablelabel{testc}{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
+	i test case generati.
+	Anche qui è stato usato un approccio multidimensionale alla generazione dei
+	test case e sta volta, non è stato inclusa la classe d'equivalenza relativa
+	a nodi non presenti in rete (sia per il reader che l'array di nodi da
+	ordinare) in quanto di bassa probabilità di utilizzo, e allo scopo di ridurre
+	il numero di test della test suite, numero di test eccessivi.
+	La classe aggiuntiva che riguarda un array di nodi con almeno un nodo che sia
+	null è utile perchè sta volta non è il riferimento all'array ad essere null,
+	ma un suo elemento (la gestione non viene comunque specificata dalla
+	documentazione) e questo può compromettere l'esecuzione del metodo (per
+	dimenticanza o assunzione del programmatore è più facile pensare che se
+	il riferimento all'array non è null allora nemmeno i suoi elementi lo saranno,
+	portando a runtime errors nel caso in cui almeno un elemento sia null).
+	Il sorting avviene sempre sui nodi della topologia prepopolata (uguale a quella
+	del metodo getDistance). Per quanto riguarda la notazione, nei test case
+	Array$<$Node$>$[ \dots ] è analogo a new Node[] \{ \dots \} in Java.
+	L'esito atteso "Il metodo termina l'esecuzione nesuna eccezione lanciata"
+	significa che l'esecuzione del metodo è praticamente una noop (ad esempio
+	se il metodo termina e l'array passato era null, non posso verificare alcun
+	ordinamento). L'implementazione del test è più complessa del normale perchè
+	non basta osservare il sorting basato sulla distanza rispetto al reader:
+	se il reader ha più di un nodo alla stessa distanza, questi ultimi (supponiamo ) due nodi possono essere posti da pseudoSortByDistance prima rispetto all'altro
+	o viceversa - dato che l'implementazione di pseudoSortByDistance nel corso del tempo può cambiare,
+	bisogna considerare esatto l'ordinamento anche se i due nodi alla stessa
+	distanza sono scambiati rispetto a quanto previsto da noi (es. 
+	se il nodo reader è \textit{/rack-1/bookie-1} e l'array è \textit{/rack-1/bookie-2} e \textit{/rack-1/bookie-3} allora sia bookie-3 che bookie-2 possono 
+	trovarsi nell'array sortato prima rispetto all'altro, dato che entrambi sono
+	alla stessa distanza rispetto a bookie-1
+	
+	I test falliti di questo metodo sono tutti quelli che hanno come nodes 
+	un array null (NullPointerException) - questo rivela un non-proper-checking
+	degli argomenti passati al metodo.
+	
+	In tabella \ref{\getreltablelabel{NetworkTopologyImpl}{\bookkeeper}} è
+	presente la reliabilty dei metodi testati. I test falliti vengono disattivati
+	per terminare la build e ottenere informazioni sull'adeguatezza dei test e
+	sulle mutazioni.
 
 	\subsection{org.apache.bookkeeper.bookie.FileInfo}
 	
@@ -743,16 +833,6 @@
 		\newtrow
 	}
 	
-	SPIEGA POPULATEDNETWORKTOPOLOGY
-	SPIEGA GETNODE e BUILDNODE (se uso getnode su nodo non esistente... null)
-	SPIEGA DISTANZA
-	SPECIFICA CHE CI INTERESSA LA DISTANZA TRA I BOOKIES
-	recupera documentazione getdistance per algoritmo distanza
-	SPIEGA PERCHE HO USATO QUELL INTERFACCIA BUILDER
-	DESCRIVI FALLIMENTI (specifica dist unif. ma in realtà...)
-	APPROCCIO MULTIDIM
-	CONSIDERAZIONI RELIABILITY: RISULTATI ESATTI SU NODI PRESENTI
-	
 	\testctable{getDistance}{NetworkTopologyImpl}{2}{\bookkeeper}{
 			\tcell{
 					null, null} &
@@ -862,15 +942,14 @@
 		\newtrow
 	}
 	
-	RICORDA: APPROCCIO sort MULTIDIMENSIONALE, RICORDA CHE NODO NON PRESENTE IN RETE NON è UTILE: BASSA PROB
-	DI UTILIZZO
-	
 	\ceqtable{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}{
 			\tcell{reader} &
 			\tcell{\ceq{null}\\\ceq{nodo presente in rete}}
 		\newtrow
 			\tcell{nodes} &
-			\tcell{\ceq{null}\\\ceq{array con tutti i nodi presenti in rete}}
+			\tcell{\ceq{null}\\\ceq{array con tutti i nodi al suo interno \\ 
+			presenti in rete}\\\ceq{array con almeno un nodo\\al suo interno\\
+			che sia null}}
 		\newtrow
 	}
 	
@@ -882,37 +961,170 @@
 		\newtrow
 			\tcell{nodes} & \tcell{\ceq{null}} & \tcell{null}
 		\newtrow
-			\tcell{nodes} & \tcell{\ceq{array con tutti i nodi\\ presenti in rete}} & 
-			\tcell{[Node("/europe/it/lazio/roma/rack-1/bookie-1"),\\
-					Node("/europe/it/lazio/roma/rack-1/bookie-2"),\\
-					Node("/europe/it/lazio/roma/rack-2/bookie-3"),\\
-					Node("/europe/it/lazio/frosinone/rack-3/bookie-4"),\\
-					Node("/europe/it/lombardia/milano/rack-4/bookie-5"),\\
-					Node("/europe/de/region-1/berlino/rack-5/bookie-6"),\\
-					Node("/america/us/california/paloalto/rack-6/bookie-7")]}
+			\tcell{nodes} & \tcell{\ceq{array con tutti i nodi\\ al suo interno \\presenti in rete}} & 
+			\tcell{Array$<$Node$>$[\\
+					\;\;Node("/europe/it/lazio/roma/rack-1/bookie-1"),\\
+					\;\;Node("/europe/it/lazio/roma/rack-1/bookie-2"),\\
+					\;\;Node("/europe/it/lazio/roma/rack-2/bookie-3"),\\
+					\;\;Node("/europe/it/lazio/frosinone/rack-3/bookie-4"),\\
+					\;\;Node("/europe/it/lombardia/milano/rack-4/bookie-5"),\\
+					\;\;Node("/europe/de/region-1/berlino/rack-5/bookie-6"),\\
+					\;\;Node("/america/us/california/paloalto/rack-6/bookie-7")
+					\\]}
+		\newtrow
+			\tcell{nodes} &
+			\tcell{\ceq{array con almeno\\ un nodo al suo interno\\
+			che sia null}} &
+			\tcell{Array$<$Node$>$[\\\;\;null\\]}
+		\newtrow
+	}	
+	
+	\testctable{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}{
+			\tcell{getNode("/europe/it/lazio\\/roma/rack-1/bookie-1"),\\
+				Array$<$Node$>$[\\
+					\;\;getNode("/europe/it/lazio/\\roma/rack-1/bookie-1"),\\
+					\;\;getNode("/europe/it/lazio/\\roma/rack-1/bookie-2"),\\
+					\;\;getNode("/europe/it/lazio/\\roma/rack-2/bookie-3"),\\
+					\;\;getNode("/europe/it/lazio/\\frosinone/rack-3/bookie-4"),\\
+					\;\;getNode("/europe/it/lombardia/\\milano/rack-4/bookie-5"),\\
+					\;\;getNode("/europe/de/region-1/\\berlino/rack-5/bookie-6"),\\
+					\;\;getNode("/america/us/california/\\paloalto/rack-6/bookie-7")
+					\\]} &
+			\tcell{L'array passato (by reference) \\
+			è stato ordinato correttaamente in base\\
+			 alla distanza dal nodo reader} &
+			\tcell{Tutti i nodi (reader e nell'array)\\ sono presenti in rete}
+		\newtrow
+			\tcell{getNode("/europe/it/lazio/\\roma/rack-1/bookie-2"),\\
+				Array$<$Node$>$[\\
+					\;\;\dots \textit{nodi unsorted} \\ \textit{(rispetto al nodo reader)}
+					\dots \\
+				]} &
+			\tcell{L'array passato (by reference) \\
+			è stato ordinato correttamente in base\\
+			alla distanza dal nodo reader} &
+			\tcell{Tutti i nodi (reader e nell'array)\\ sono presenti in rete}
+		\newtrow
+			\tcell{getNode("/europe/it/lazio/\\roma/rack-2/bookie-3"),\\
+				Array$<$Node$>$[\\
+					\;\;\dots \textit{nodi unsorted} \\ \textit{(rispetto al nodo reader)}
+					\dots \\
+				]} &
+			\tcell{L'array passato (by reference) \\
+			è stato ordinato correttamente in base\\
+			alla distanza dal nodo reader} &
+			\tcell{Tutti i nodi (reader e nell'array)\\ sono presenti in rete}
+		\newtrow
+			\tcell{getNode("/europe/it/lazio/\\frosinone/rack-3/bookie-4"),\\
+				Array$<$Node$>$[\\
+					\;\;\dots \textit{nodi unsorted} \\ \textit{(rispetto al nodo reader)}
+					\dots \\
+				]} &
+			\tcell{L'array passato (by reference) \\
+			è stato ordinato correttamente in base\\
+			alla distanza dal nodo reader} &
+			\tcell{Tutti i nodi (reader e nell'array)\\ sono presenti in rete}
+		\newtrow
+			\tcell{getNode("/europe/it/lombardia/\\milano/rack-4/bookie-5"),\\
+				Array$<$Node$>$[\\
+					\;\;\dots \textit{nodi unsorted} \\ \textit{(rispetto al nodo reader)}
+					\dots \\
+				]} &
+			\tcell{L'array passato (by reference) \\
+			è stato ordinato correttamente in base\\
+			alla distanza dal nodo reader} &
+			\tcell{Tutti i nodi (reader e nell'array)\\ sono presenti in rete}
+		\newtrow
+			\tcell{getNode("/europe/de/region-1/\\berlino/rack-5/bookie-6"),\\
+				Array$<$Node$>$[\\
+					\;\;\dots \textit{nodi unsorted} \\ \textit{(rispetto al nodo reader)}
+					\dots \\
+				]} &
+			\tcell{L'array passato (by reference) \\
+			è stato ordinato correttamente in base\\
+			alla distanza dal nodo reader} &
+			\tcell{Tutti i nodi (reader e nell'array)\\ sono presenti in rete}
+		\newtrow
+			\tcell{getNode("/america/us/california/\\paloalto/rack-6/bookie-7"),\\
+				Array$<$Node$>$[\\
+					\;\;\dots \textit{nodi unsorted} \\ \textit{(rispetto al nodo reader)}
+					\dots \\
+				]} &
+			\tcell{L'array passato (by reference) \\
+			è stato ordinato correttamente in base\\
+			alla distanza dal nodo reader} &
+			\tcell{Tutti i nodi (reader e nell'array)\\ sono presenti in rete}
+		\newtrow
+			\tcell{null, null} &
+			\tcell{Il metodo termina l'esecuzione\\nessuna eccezione lanciata} &
+			\tcell{La documentazione non specifica\\la gestione dei nodi null.\\
+					Dato che altri metodi d'istanza\\gestiscono ref. null\\
+					si assume che anche questo\\ ne sia in grado}
+		\newtrow
+			\tcell{null, Array$<$Node$>$[null]} &
+			\tcell{Il metodo termina l'esecuzione\\nessuna eccezione lanciata} &
+			\tcell{La documentazione non specifica\\la gestione dei nodi null.\\
+					Dato che altri metodi d'istanza\\gestiscono ref. null\\
+					si assume che anche questo\\ ne sia in grado}
+		\newtrow
+			\tcell{null, \\Array$<$Node$>$[\\\;\;getNode("/europe/it/lazio/\\roma/rack-1/bookie-1")\\]} &
+			\tcell{Il metodo termina l'esecuzione\\nessuna eccezione lanciata} &
+			\tcell{La documentazione non specifica\\la gestione dei nodi null.\\
+					Dato che altri metodi d'istanza\\gestiscono ref. null\\
+					si assume che anche questo\\ ne sia in grado}
+		\newtrow
+			\tcell{getNode("/europe/it/lazio/\\roma/rack-1/bookie-1"), null} &
+			\tcell{Il metodo termina l'esecuzione\\nessuna eccezione lanciata} &
+			\tcell{La documentazione non specifica\\la gestione dei nodi null.\\
+					Dato che altri metodi d'istanza\\gestiscono ref. null\\
+					si assume che anche questo\\ ne sia in grado}
+		\newtrow
+			\tcell{getNode("/europe/it/lazio/\\roma/rack-1/bookie-1"),\\ Array$<$Node$>$[null]} &
+			\tcell{Il metodo termina l'esecuzione\\nessuna eccezione lanciata} &
+			\tcell{La documentazione non specifica\\la gestione dei nodi null.\\
+					Dato che altri metodi d'istanza\\gestiscono ref. null\\
+					si assume che anche questo\\ ne sia in grado}
 		\newtrow
 	}
 			
-	
+	\newpage
 	\reltable{NetworkTopologyImpl}{\bookkeeper}{
 			\tcell{add} &
-			\tcell{14} &
-			\tcell{14} &
-			\tcell{0} &
+			\tcell{$14$} &
+			\tcell{$14$} &
+			\tcell{$0$} &
 			\tcell{
-					tabella \ref{\gettablelabel{testc}{add}{NetworkTopologyImpl}{1}{\bookkeeper}},
-					tabella \ref{\gettablelabel{testc}{add}{NetworkTopologyImpl}{2}{\bookkeeper}}} &
+					tabella $\ref{\gettablelabel{testc}{add}{NetworkTopologyImpl}{1}{\bookkeeper}}$,
+					tabella $\ref{\gettablelabel{testc}{add}{NetworkTopologyImpl}{2}{\bookkeeper}}$} &
 			\tcell{\unifdist{0.07}} &
-			\tcell{1}
+			\tcell{$1$}
 		\newtrow	
 			\tcell{remove} &
-			\tcell{3} &
-			\tcell{3} &
-			\tcell{0} &
+			\tcell{$3$} &
+			\tcell{$3$} &
+			\tcell{$0$} &
 			\tcell{
-					tabella \ref{\gettablelabel{testc}{remove}{NetworkTopologyImpl}{1}{\bookkeeper}}} &
+					tabella $\ref{\gettablelabel{testc}{remove}{NetworkTopologyImpl}{1}{\bookkeeper}}$} &
 			\tcell{\unifdist{0.33}} &
-			\tcell{1}
+			\tcell{$1$}
+		\newtrow
+			\tcell{getDistance} &
+			\tcell{$15$} &
+			\tcell{$8$} &
+			\tcell{$7$} &
+			\tcell{
+					tabella $\ref{\gettablelabel{testc}{getDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}$} &
+			\tcell{\unifdist{0.067}} &
+			\tcell{$0.531$}
+		\newtrow
+			\tcell{pseudoSort\\ByDistance} &
+			\tcell{$12$} &
+			\tcell{$10$} &
+			\tcell{$2$} &
+			\tcell{
+					tabella $\ref{\gettablelabel{testc}{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}$} &
+			\tcell{\unifdist{0.083}} &
+			\tcell{$0.834$}
 		\newtrow
 	}
 	
