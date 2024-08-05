@@ -1,5 +1,6 @@
 \documentclass[10pt, a4paper]{article}
 
+\usepackage{longtable}
 \usepackage{setspace}
 \usepackage[utf8]{inputenc}
 \usepackage[italian]{babel}
@@ -45,14 +46,11 @@
 \renewcommand\theadfont{\bfseries}
 
 \newcommand{\Intmaketable}[4]{
-	\begin{table}[h!]
-	\centering
-	\begin{tabular}{#3}
+	\begin{longtable}{#3}
 	#4
-	\end{tabular}
 	\caption{#2}
 	\label{#1}
-	\end{table}
+	\end{longtable}
 }
 
 \newcommand{\Intceqtable}[3]{
@@ -85,9 +83,21 @@
 	\hline}
 }
 
+\newcommand{\Intreltable}[3]{
+	\Intmaketable{#1}{#2}{|l|l|l|l|l|l|l|}{
+	\hline
+	\thead{Metodo} & \thead{\# test totali} & \thead{\# test pass.} & \thead{\# test fail.} & \thead{Rif. num. tab. prof. op.} &
+	\thead{Distribuzione} & \thead{Reliability}\\
+	\hline
+	\hline
+	#3
+	\hline}
+}
+
 \newcommand{\Intceqcaption}[4]{Classi d'eq. per metodo #1 di #2, iter. #3 (#4)}
 \newcommand{\Intbvcaption}[4]{Boundary values per classi d'eq. metodo #1 di #2, iter #3 (#4)}
 \newcommand{\Inttestccaption}[4]{Casi di test per metodo #1 di #2, iter. #3 (#4)}
+\newcommand{\Intrelcaption}[2]{Reliability ($1-PFD$) calcolata per ogni metodo della classe #1 (#2)}
 
 %% BEGIN COMMANDS TO BE USED
 
@@ -102,6 +112,9 @@
 
 % use this to reference table in text
 \newcommand{\gettablelabel}[5]{table:#1:#2:#3:iter#4:proj#5}
+
+% use this to reference reliability summary table label
+\newcommand{\getreltablelabel}[2]{\gettablelabel{#1}{}{}{}{#2}}
 
 \newcommand{\ceqtable}[5]{
 	\Intceqtable{\gettablelabel{ceq}{#1}{#2}{#3}{#4}}
@@ -121,6 +134,21 @@
 		{#5}
 }
 
+%
+% parameters:
+%  #1: class name
+%  #2: project name
+%  #3: table content
+%
+
+\newcommand{\reltable}[3] {
+	\Intreltable{\getreltablelabel{#1}{#2}}
+		{\Intrelcaption{#1}{#2}}
+		{#3}
+}
+
+\newcommand{\unifdist}[1]{Uniforme: $#1$}
+
 % use this to reference pictures in text
 \newcommand{\getpicturelabel}[1]{picture:#1}
 
@@ -133,7 +161,7 @@
 %
 
 \newcommand{\makepicture}[4]{
-	\begin{figure}[h!]
+	\begin{figure}[H]
 	\centering
 	\includegraphics[width=#1, height=#2]{#3}
 	\caption{#4}
@@ -284,7 +312,8 @@
 	\textbf{Per il metodo add}: in tabella 
 	\ref{\gettablelabel{ceq}{add}{NetworkTopologyImpl}{1}{\bookkeeper}}
 	le classi d'equivalenza sono state scelte sulla base delle considerazioni fatte fino al paragrafo
-	precedente sulla topologia di rete imposta da \bookkeeper. In Java, qualsiasi riferimento ad
+	precedente sulla topologia di rete imposta da \bookkeeper\;(in particolare, in merito alla validità/non
+	validità dei path dei nodes). In Java, qualsiasi riferimento ad
 	un'oggetto può assumere valore null (tranne per i tipi primitivi), 
 	che sarà quindi un valore da tenere quasi sempre in 
 	considerazione dato che per alcuni metodi può avere un certo significato e/o conseguenze 
@@ -295,18 +324,21 @@
 	e deve restituire il path assoluto a una directory - con null si potrebbe pensare di indicare la 		
 	current working directory senza che l'utilizzatore debba chiamare ulteriori metodi - 
 	FileSystem.getAbsolutePath(null)). La tabella \ref{\gettablelabel{bv}{add}{NetworkTopologyImpl}{1}
-	{\bookkeeper}} specifica i valori al bordo: in questo caso i nodi con path (non) valido, che (non) 
+	{\bookkeeper}} specifica i valori al bordo (la notazione \textit{Node("path")} presente in tabella indica
+	istanze di nodi che puntano a quel path): in questo caso i nodi con path (non) valido, che (non) 
 	passano il check di \underline{validazione} di NetworkTopologyImpl, sono molteplici, ma il valore al 
 	bordo viene scelto per semplicità del percorso. 
-	La tabella \ref{\gettablelabel{testc}{add}{NetworkTopologyImpl}{1}{\bookkeeper}} contiene i casi
-	di test generati a partire da un approccio unidimensionale. In tabella sono anche presentati
+	La tabella \ref{\gettablelabel{testc}{add}{NetworkTopologyImpl}{1}{\bookkeeper}}. 
+	In tabella sono anche presentati
 	gli esiti attesi con la motivazione - se l'esito atteso è:
 	\begin{itemize}
 		\item \textit{Nessuna variazione rispetto alla topologia attuale}: ci si aspetta che la 
 		topologia prima e dopo l'esecuzione del metodo del SUT rimanga inalterata - nel nostro caso, 
 		che la add avviene in una topologia di rete vuota, dopo l'esecuzione di add, ci si aspetta che 
 		siano presenti 0 "racks" e 0 "leaves" (bookies) e il metodo del SUT che deve restituire il 
-		riferimento al nodo in base al path cercato (\textit{"getNode"}) deve restituire null
+		riferimento al nodo in base al path cercato (\textit{"getNode"}) deve restituire null o eventualmente
+		un nodo che non sia uguale a quello che si è tentato di inserire (spiegazione in fondo all'estensione
+		dei casi di test del metodo add, seconda iterazione)
 		\item \textit{Nessuna eccezione lanciata}: una eventuale eccezione (che sia checked o unchecked)
 		inaspettata causa fallimento immediato dell'esecuzione del test.
 		\item \textit{IllegalArgumentException lanciata}: mediante l'uso di \textit{assertThrows} di
@@ -317,6 +349,8 @@
 		del SUT, 1 "rack" e 1 "leave" (bookie), in più il metodo \textit{getNode} del SUT deve 
 		restituire una reference all'oggetto che sia uguale a quella del nodo passato ad add.
 	\end{itemize}
+	
+	Nella generazione dei casi di test è stato seguito un approccio unidimensionale.
 	
 	E' stato aggiunto un caso di test in più rispetto al boundary value della classe d'equivalenza di
 	\{nodo con path valido\} al fine di testare inserimento del nodo ad un altezza diversa.
@@ -348,7 +382,8 @@
 	(getNode sul path deve restituire come riferimento lo stesso oggetto Node passato ad add)
 	quindi, dopo la delete, in rete devono esserci 0 rack, 0 leave e getNode sul path deve restiutire 
 	null. Il codice del test case è riportato in figura \ref{\getpicturelabel{bk/code-1-remove-NetworkTopologyImpl-1}}
-	e \ref{\getpicturelabel{bk/code-2-remove-NetworkTopologyImpl-1}}.
+	e \ref{\getpicturelabel{bk/code-2-remove-NetworkTopologyImpl-1}}. Anche in questo caso, per la
+	generazione dei test case è stato seguito l'approccio unidimensionale.
 	
 	Prima dell'esecuzione del metodo di add o remove (a seconda del metodo sottto test), ci si accerta 	
 	che la topologia contenga un nodo o sia vuota (a seconda del test case da eseguire), come indicato
@@ -389,35 +424,88 @@
 	casistiche, importanti e decisamente più realistiche 
 	(es. che succede se il nodo che si prova a inserire è già nella rete?).
 	
-	Per quanto riguarda il metodo remove, nonostante le metriche siano soddisfacenti, per lo stesso
-	motivo di add, si decide di proseguire con un ulteriore iterazione di stesura dei test case:
-	che succede se per esempio si prova ad eliminare un rack invece che un bookie (in termini di alberi 
-	- si prova ad eliminare un nodo che non sia una foglia)?
+	Per quanto riguarda il metodo remove, le metriche sono soddisfacenti e si decide di non proseguire 
+	con un ulteriore iterazione di stesura dei test case: i casi di utilizzo di remove di maggior interesse
+	sono stati coperti dalla test suite.
 	
 	Data l'importanza della classe, si decide di testare anche i metodi 
 	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/NetworkTopologyImpl.html#getDistance(org.apache.bookkeeper.net.Node,org.apache.bookkeeper.net.Node)}
-	{getDistance} e 
+	{getDistance},
 	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/NetworkTopologyImpl.html#pseudoSortByDistance(org.apache.bookkeeper.net.Node,org.apache.bookkeeper.net.Node[])}
 	{pseudoSortByDistance}
 	- la scelta è dettata dal fatto che \bookkeeper\;è un sistema distribuito e quindi i metodi in questione svolgono un ruolo cruciale
 	nel cercare, ad esempio, un bookie a distanza minima che rispetti certi criteri per replicare le entries - se il metodo pseudoSortByDistance
-	funziona erroneamente si avrà un peggioramento delle prestazioni (la topologia rispecchia la distanza fisica tra i bookies - risultati errati di pseudoSortByDistance corrispondono a diminuzione del rate di trasferimento dati)
+	funziona erroneamente si avrà un peggioramento delle prestazioni (la topologia rispecchia la distanza fisica tra i bookies - risultati errati di pseudoSortByDistance corrispondono a diminuzione del rate di trasferimento dati).
 	
+	\textbf{Estensione casi di test metodo add}: osserviamo dalla 
+	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/NetworkTopologyImpl.html#add(org.apache.bookkeeper.net.Node)}
+	{documentazione di add}
+	che il metodo lancia IllegalArgumentException se il nodo da inserire non è una foglia, oppure si tenta
+	di rendere una foglia esistente un parent ("appendendogli" una foglia) - per verificare che il metodo
+	in queste condizioni abbia il comportamento atteso, bisogna estendere i casi di test: add deve validare il 
+	nodo da inserire per la topologia di rete esistente - bisogna \underline{popolare la rete} prima di eseguire i test case. 
+	E' un requisito di \bookkeeper\; che l'albero abbia tutti i rami alla stessa altezza.
+	Che succede inoltre, se si prova ad inserire nodi con path già esistenti?
+	\textit{Nella prima iterazione è stato possibile identificare un nodo con path non valido perchè per la topologia
+	di rete "enforced" da \bookkeeper\; alla root non possono essere collegate delle foglie (prescinde l'albero
+	di rete attuale)}
 	
+	\textit{Le tabelle per add e remove referenziate in questa seconda iterazione sono aggiuntive (non includono anche,
+	ad esempio, le classi d'equivalenza o i test case generati dell'iterazione precedente, ma andranno considerate
+	entrambe le tabelle per i profili operazionali e stima della reliability, a mo di unione tra set).}
 	
-	%NELL'ITERAZIONE 2 prova a usare NodeBase: specifica bookieid error per bookiename invalido e 
-	%ulteriori test - 
+	Prima dell'esecuzione dei test, viene generata una topologia di rete con altezza 3 (es. /dc-1/rack-1/bookie-1 
+	è un leaf node della rete strutturata)
 	
-	%NELL'ITERAZIONE 2 specifica che add andava fatto anche su rete già popolata (es. aggiunta nodo
-	%già esistente e rispetto della topologia attuale)
+	In tabella \ref{\gettablelabel{ceq}{add}{NetworkTopologyImpl}{2}{\bookkeeper}} vengono specificate le
+	classi d'equivalenza. Sono sufficienti queste 4 classi in quanto sufficienti a partizionare il dominio -
+	il metodo non "capisce" la differenza tra /dc-1/rack-1 e /dc-1/bookie-1: se l'altezza del nodo da inserire
+	è inferiore rispetto all'altezza dell'albero attuale, allora a prescindere il nodo non sarà una foglia, sia
+	che si chiami "rack-1" che "bookie-1". Stessa cosa vale per l'inserimento di un nodo ad altezza superiore -
+	può darsi che si tenti di rendere parent una foglia già esistente o di creare una nuova foglia ma ad altezza
+	superiore. I boundary values in tabella \ref{\gettablelabel{bv}{add}{NetworkTopologyImpl}{2}{\bookkeeper}}
+	sono stati generati per semplicità (es. non ha senso inserire un nodo ad altezza superiore che ha 10 livelli). In tabella \ref{\gettablelabel{testc}{add}{NetworkTopologyImpl}{2}{\bookkeeper}} sono presenti i test
+	case generati. L'utilizzo di NodeBase è necessario perchè il metodo ausiliario buildNode usa il costruttore di
+	BookieNode che a sua volta necessita di BookieId.parse che alla presenza di id del bookie non validi, lancia
+	un'eccezione e non permette di proseguire col test del SUT (es. buildNode("/dc-2","") risulterebbe in eccezione per id del bookie non valido, ma è necessario per testare inserimento di inner node/router).
 	
-	%NELL'ITERAZIONE 2 specifica prova remove su path invalidi (anche su rete già popolata - es prova
-	%a eliminare inner node)
+	Seguiamo anche qui un approccio unidimensionale alla generazione dei casi di test, e i significati
+	degli esiti attesi sono identici a quelli descritti per add nell'iterazione precedente (ovviamente,
+	relativamente alla "popolazione" della rete: se ad esempio si aggiunge un nodo, allora si verifica che
+	vi siano prima $k$ nodi, poi, se ci si aspetta successo dell'inserimento, $k+1$ nodi)
+	
+	La motivazione per cui ci si aspetta che getNode, nel caso in cui l'inserimento fallisca, debba restituire
+	null oppure un riferimento a un nodo diverso da quello di cui si è tentato l'inserimento è che getNode
+	può restituire riferimenti a nodi anche non-foglia: se in una topologia ho un Node("/rack-1/bookie-1") allora
+	avrò anche un nodo interno Node("/rack-1"): getNode sarà in grado di restituire la reference all'oggetto
+	in questione. Se si prova a creare un \underline{nuovo} oggetto Node("/rack-1") (e quindi il suo inserimento),
+	 e poi si tenta di effettuare
+	l'asserzione che getNode("/rack-1") sia null, allora questa fallirà perchè un nodo con path "/rack-1" è
+	effettiamente presente in rete, e ne verrà restituita la reference (ma ricordiamo, diversa da quella dell'
+	oggetto di cui si è tentato l'inserimento). Nei test di add della prima iterazione, quest'aspetto è 
+	indifferente, dato che la topologia è vuota.
+	
+	\textbf{Per il metodo getDistance}
+	
+	GETDISTANCE: AGGIUNGI CASI DI TEST NULL (COMBINAZIONI) E NODI APPARTENENTI/NON APPARTENENTI (DOCS)
+	PSEUDOSORTBYDISTANCE: STESSA COSA, IN PIU SPECIFICA CHE IN ENTRAMBI I CASI I TEST GENERATI RIGUARDANO
+	I BOOKIES, DATA LA NATURA DEI METODI E DI BK
 
 	\subsection{org.apache.bookkeeper.bookie.FileInfo}
 	
 	\newpage
+	\section{Link ai repository}
+	\begin{itemize}
+		\item BookKeeper: \url{https://github.com/StefanoBelli/bookkeeper}
+		\item Storm: \url{https://github.com/StefanoBelli/storm}
+	\end{itemize}
+	
+	\newpage
 	\section{Tabelle, figure e code listings}
+	
+	%
+	% Iter: 1, Class: NetworkTopologyImpl, Project: Bookkeeper
+	%
 	
 	\ceqtable{add}{NetworkTopologyImpl}{1}{\bookkeeper}{
 			\tcell{node} & \tcell{\ceq{null} \\ \ceq{nodo con path invalido} \\ \ceq{nodo con path valido} }
@@ -456,6 +544,8 @@
 			con path presente in rete}}
 		\newtrow
 	}
+	
+	\pagebreak
 	
 	\bvtable{remove}{NetworkTopologyImpl}{1}{\bookkeeper}{
 			\tcell{node} & \tcell{\ceq{null}} & \tcell{null} 
@@ -507,8 +597,323 @@
 	\makepicture{16cm}{10cm}{bk/code-1-remove-NetworkTopologyImpl-1}
 				{Parametri e metodo: \finishcodecaption{remove}{NetworkTopologyImpl}{1}{\bookkeeper}}
 				
-	\makepicture{15cm}{12cm}{bk/code-2-remove-NetworkTopologyImpl-1}
+	\makepicture{16cm}{12cm}{bk/code-2-remove-NetworkTopologyImpl-1}
 				{Metodi statici per evitare eccessiva duplicazione di codice di verifica:
 				\finishcodecaption{remove}{NetworkTopologyImpl}{1}{\bookkeeper}}
-
+				
+	%
+	% Iter: 2, Class: NetworkTopologyImpl, Project: Bookkeeper
+	%
+	
+	\ceqtable{add}{NetworkTopologyImpl}{2}{\bookkeeper}{
+			\tcell{node} & \tcell{
+									\ceq{nodo con path ad altezza inferiore risp. alla topologia attuale} \\
+									\ceq{nodo con path ad altezza superiore risp. alla topologia attuale} \\
+									\ceq{nodo con path già esistente} \\
+									\ceq{nodo con path valido risp. alla topologia attuale(uguale altezza) e non esistente}
+								}
+		\newtrow
+	}
+	
+	\bvtable{add}{NetworkTopologyImpl}{2}{\bookkeeper}{
+			\tcell{node} & 
+			\tcell{\ceq{nodo con path ad altezza inferiore\\ risp. alla topologia attuale}} &
+			\tcell{Node("/rack-1/bookie-1")}
+		\newtrow
+			\tcell{node} &
+			\tcell{\ceq{nodo con path ad altezza superiore\\ risp. alla topologia attuale}} &
+			\tcell{Node("/region-1/dc-1/rack-1/bookie-1")}
+		\newtrow
+			\tcell{node} &
+			\tcell{\ceq{nodo con path già esistente}} &
+			\tcell{Node("/dc-1/rack-1/bookie-1")}
+		\newtrow
+			\tcell{node} &
+			\tcell{\ceq{nodo con path valido risp.\\ alla topologia attuale\\(uguale altezza) e non esistente}} &
+			\tcell{Node("/dc-3/rack-4/bookie-7")}
+		\newtrow
+	}
+	
+	\testctable{add}{NetworkTopologyImpl}{2}{\bookkeeper}{
+			\tcell{buildNode("/rack-1","bookie-1")} &
+			\tcell{Nessuna variazione rispetto \\ alla topologia 
+			attuale, \\InvalidTopologyException viene\\ lanciata} &
+			\tcell{La documentazione specifica\\lancio di eccezione
+			se il nodo\\ inserito non è una foglia\\ (altezza inferiore,\\
+			tentativo di aggiunta foglia)}
+		\newtrow
+			\tcell{NodeBase("/dc-2")} &
+			\tcell{Nessuna variazione rispetto \\ alla topologia 
+			attuale, \\InvalidTopologyException viene\\ lanciata} &
+			\tcell{La documentazione specifica\\lancio di eccezione
+			se il nodo\\ inserito non è una foglia\\ (altezza inferiore,\\
+			tentativo di aggiunta di un router)}
+		\newtrow
+			\tcell{NodeBase("/dc-3/rack-2")} &
+			\tcell{Nessuna variazione rispetto \\ alla topologia 
+			attuale, \\InvalidTopologyException viene\\ lanciata} &
+			\tcell{La documentazione specifica\\lancio di eccezione
+			se il nodo\\ inserito non è una foglia\\ (altezza inferiore,\\
+			tentativo di aggiunta di un router)}
+		\newtrow
+			\tcell{buildNode("/region-1/dc-1/rack-1",\\"bookie-1")} &
+			\tcell{Nessuna variazione rispetto \\ alla topologia 
+			attuale, \\InvalidTopologyException viene\\ lanciata} &
+			\tcell{La documentazione specifica\\lancio di eccezione
+			se il nodo\\ ha altezza maggiore rispetto\\
+			all'albero attuale}
+		\newtrow
+			\tcell{buildNode("/dc-1/rack-1/bookie-1",\\"another-bookie")} &
+			\tcell{Nessuna variazione rispetto \\ alla topologia 
+			attuale, \\InvalidTopologyException viene\\ lanciata} &
+			\tcell{La documentazione specifica\\ lancio di eccezione
+			se il nodo\\ ha come parent una foglia\\ esistente
+			(un bookie non è un router)}
+		\newtrow
+			\tcell{buildNode("/dc-1/rack-1","bookie-1")} &
+			\tcell{Nessuna variazione rispetto \\ alla topologia 
+			attuale, \\nessuna eccezione lanciata} &
+			\tcell{La documentazione non specifica\\ nulla a riguardo
+			dell'inserimento\\  di nodi già esistenti, ma è ragionevole\\
+			aspettarsi che il nodo da inserire\\ venga ignorato, dato che\\
+			è già presente}
+		\newtrow
+			\tcell{buildNode("/dc-3/rack-4","bookie-7")} &
+			\tcell{Aggiunta con successo del nodo\\ alla rete} &
+			\tcell{Il nodo ha altezza coerente\\ con la topologia attuale e\\ 
+			non esiste attualmente \\(/dc-3/rack-4 già esistenti,\\ ma non bookie-7)}
+		\newtrow
+			\tcell{buildNode("/dc-3/rack-5","bookie-8")} &
+			\tcell{Aggiunta con successo del nodo\\ alla rete} &
+			\tcell{Il nodo ha altezza coerente\\ con la topologia attuale e\\ 
+			non esiste attualmente \\(/dc-3 già esistente,\\ ma non rack-5/bookie-8)}
+		\newtrow
+			\tcell{buildNode("/dc-4/rack-6","bookie-9")} &
+			\tcell{Aggiunta con successo del nodo\\ alla rete} &
+			\tcell{Il nodo ha altezza coerente\\ con la topologia attuale e\\ 
+			non esiste attualmente \\(/dc-4/rack-6/bookie-9 non esistono)}
+		\newtrow
+			\tcell{buildNode("/dc-4/rack-6","bookie-7")} &
+			\tcell{Aggiunta con successo del nodo\\ alla rete} &
+			\tcell{Il nodo ha altezza coerente\\ con la topologia attuale e\\ 
+			non esiste attualmente \\(Esiste un altro "bookie-7"\\ 
+			\underline{MA in un altro ramo} dell'albero)}
+		\newtrow
+	}
+	
+	\ceqtable{getDistance}{NetworkTopologyImpl}{2}{\bookkeeper}{
+			\tcell{node1} &
+			\tcell{
+				\ceq{null}\\
+				\ceq{nodo appartenente alla rete} \\
+				\ceq{nodo non appartenente alla rete}}
+		\newtrow
+			\tcell{node2} &
+			\tcell{
+				\ceq{null}\\
+				\ceq{nodo appartenente alla rete} \\
+				\ceq{nodo non appartenente alla rete}}
+		\newtrow
+	}
+	
+	\bvtable{getDistance}{NetworkTopologyImpl}{2}{\bookkeeper}{
+			\tcell{node1} &
+			\tcell{\ceq{null}} &
+			\tcell{null}
+		\newtrow
+			\tcell{node1} &
+			\tcell{\ceq{nodo appartenente alla rete}} &
+			\tcell{Node("/europe/it/lazio/frosinone/rack-1/bookie-1")}
+		\newtrow
+			\tcell{node1} &
+			\tcell{\ceq{nodo non appartenente alla rete}} &
+			\tcell{Node("/asia/ru/region-1/moscow/rack-2/bookie-2")}
+		\newtrow
+			\tcell{node2} &
+			\tcell{\ceq{null}} &
+			\tcell{null}
+		\newtrow
+			\tcell{node2} &
+			\tcell{\ceq{nodo appartenente alla rete}} &
+			\tcell{Node("/europe/it/lazio/frosinone/rack-1/bookie-1")}
+		\newtrow
+			\tcell{node2} &
+			\tcell{\ceq{nodo non appartenente alla rete}} &
+			\tcell{Node("/asia/ru/region-1/moscow/rack-2/bookie-2")}
+		\newtrow
+	}
+	
+	SPIEGA POPULATEDNETWORKTOPOLOGY
+	SPIEGA GETNODE e BUILDNODE (se uso getnode su nodo non esistente... null)
+	SPIEGA DISTANZA
+	SPECIFICA CHE CI INTERESSA LA DISTANZA TRA I BOOKIES
+	recupera documentazione getdistance per algoritmo distanza
+	SPIEGA PERCHE HO USATO QUELL INTERFACCIA BUILDER
+	DESCRIVI FALLIMENTI (specifica dist unif. ma in realtà...)
+	APPROCCIO MULTIDIM
+	CONSIDERAZIONI RELIABILITY: RISULTATI ESATTI SU NODI PRESENTI
+	
+	\testctable{getDistance}{NetworkTopologyImpl}{2}{\bookkeeper}{
+			\tcell{
+					null, null} &
+			\tcell{Ritorno valore 0,\\nessuna eccezione sollevata} &
+			\tcell{La documentazione non specifica\\la gestione dei nodi null.\\
+					Dato che altri metodi d'istanza\\gestiscono ref. null\\
+					si assume che anche questo\\ ne sia in grado}
+		\newtrow
+			\tcell{
+					getNode("/europe/it/lazio/frosinone/\\rack-1/bookie-1"),\\
+					null} &
+			\tcell{Ritorno valore 0,\\nessuna eccezione sollevata} &
+			\tcell{La documentazione non specifica\\la gestione dei nodi null.\\
+					Dato che altri metodi d'istanza\\gestiscono ref. null\\
+					si assume che anche questo\\ ne sia in grado (nodo non-null\\ esistente)}
+		\newtrow
+			\tcell{
+					buildNode("/asia/ru/region-1/\\moscow/rack-2/bookie-2"),\\
+					null} &
+			\tcell{Ritorno valore 0,\\nessuna eccezione sollevata} &
+			\tcell{La documentazione non specifica\\la gestione dei nodi null.\\
+					Dato che altri metodi d'istanza\\gestiscono ref. null\\
+					si assume che anche questo\\ ne sia in grado (nodo non-null\\ non-esistente)}
+		\newtrow
+			\tcell{
+					null,\\
+					getNode("/europe/it/lazio/frosinone/\\rack-1/bookie-1")} &
+			\tcell{Ritorno valore 0,\\nessuna eccezione sollevata} &
+			\tcell{La documentazione non specifica\\la gestione dei nodi null.\\
+					Dato che altri metodi d'istanza\\gestiscono ref. null\\
+					si assume che anche questo\\ ne sia in grado (nodo non-null\\ esistente)}
+		\newtrow
+			\tcell{
+					null,\\
+					buildNode("/asia/ru/region-1/\\moscow/rack-2/bookie-2")} &
+			\tcell{Ritorno valore 0,\\nessuna eccezione sollevata} &
+			\tcell{La documentazione non specifica\\la gestione dei nodi null.\\
+					Dato che altri metodi d'istanza\\gestiscono ref. null\\
+					si assume che anche questo\\ ne sia in grado (nodo non-null\\ non-esistente)}
+		\newtrow
+			\tcell{
+					buildNode("/asia/ru/region-1/\\moscow/rack-2/bookie-2"),\\
+					getNode("/europe/it/lazio/\\roma/rack-1/bookie-1")} &
+			\tcell{Ritorno valore Integer.MAX\_VALUE} &
+			\tcell{Il primo nodo non esiste\\ e la documentazione specifica\\ il ritorno di Integer.MAX\_VALUE}
+		\newtrow
+			\tcell{
+					getNode("/europe/it/lazio/\\roma/rack-1/bookie-1"),\\
+					buildNode("/asia/ru/region-1/\\moscow/rack-2/bookie-2")} &
+			\tcell{Ritorno valore Integer.MAX\_VALUE} &
+			\tcell{Il secondo nodo non esiste\\ e la documentazione specifica\\ il ritorno di Integer.MAX\_VALUE}
+		\newtrow
+			\tcell{
+					buildNode("/asia/cn/region-1/\\beijing/rack-1/bookie-1"),\\
+					buildNode("/asia/ru/region-1/\\moscow/rack-2/bookie-2")} &
+			\tcell{Ritorno valore Integer.MAX\_VALUE} &
+			\tcell{Entrambi i nodi non esistono\\ 
+			e la documentazione specifica\\ il ritorno di Integer.MAX\_VALUE}
+		\newtrow
+			\tcell{
+					getNode("/europe/it/lazio/\\roma/rack-1/bookie-1"),\\
+					getNode("/europe/it/lazio/\\roma/rack-1/bookie-1")} &
+			\tcell{Ritorno valore 0} &
+			\tcell{Il nodo è presente in rete:\\ come da documentazione,\\ dist. tra lo stesso nodo è 0}
+		\newtrow
+			\tcell{
+					getNode("/europe/it/lazio/\\roma/rack-1/bookie-1"),\\
+					getNode("/europe/it/lazio/\\roma/rack-1/bookie-2")} &
+			\tcell{Ritorno valore 2} &
+			\tcell{Entrambi i nodi sono presenti in rete\\(algoritmo calcolo distanza\\presente nella
+				documentazione\\del metodo)}
+		\newtrow
+			\tcell{
+					getNode("/europe/it/lazio/\\roma/rack-1/bookie-1"),\\
+					getNode("/europe/it/lazio/\\roma/rack-2/bookie-3")} &
+			\tcell{Ritorno valore 4} &
+			\tcell{Entrambi i nodi sono presenti in rete\\(algoritmo calcolo distanza\\presente nella
+				documentazione\\del metodo)}
+		\newtrow
+			\tcell{
+					getNode("/europe/it/lazio/\\roma/rack-1/bookie-1"),\\
+					getNode("/europe/it/lazio/\\frosinone/rack-1/bookie-4")} &
+			\tcell{Ritorno valore 6} &
+			\tcell{Entrambi i nodi sono presenti in rete\\(algoritmo calcolo distanza\\presente nella
+				documentazione\\del metodo)}
+		\newtrow
+			\tcell{
+					getNode("/europe/it/lazio/\\roma/rack-1/bookie-1"),\\
+					getNode("/europe/it/lombardia/\\milano/rack-1/bookie-5")} &
+			\tcell{Ritorno valore 8} &
+			\tcell{Entrambi i nodi sono presenti in rete\\(algoritmo calcolo distanza\\presente nella
+				documentazione\\del metodo)}
+		\newtrow
+			\tcell{
+					getNode("/europe/it/lazio/\\roma/rack-1/bookie-1"),\\
+					getNode("/europe/de/region-1/\\berlino/rack-1/bookie-6")} &
+			\tcell{Ritorno valore 10} &
+			\tcell{Entrambi i nodi sono presenti in rete\\(algoritmo calcolo distanza\\presente nella
+				documentazione\\del metodo)}
+		\newtrow
+			\tcell{
+					getNode("/europe/it/lazio/\\roma/rack-1/bookie-1"),\\
+					getNode("/america/us/california/\\paloalto/rack-2/bookie-7")} &
+			\tcell{Ritorno valore 12} &
+			\tcell{Entrambi i nodi sono presenti in rete\\(algoritmo calcolo distanza\\presente nella
+				documentazione\\del metodo)}
+		\newtrow
+	}
+	
+	RICORDA: APPROCCIO sort MULTIDIMENSIONALE, RICORDA CHE NODO NON PRESENTE IN RETE NON è UTILE: BASSA PROB
+	DI UTILIZZO
+	
+	\ceqtable{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}{
+			\tcell{reader} &
+			\tcell{\ceq{null}\\\ceq{nodo presente in rete}}
+		\newtrow
+			\tcell{nodes} &
+			\tcell{\ceq{null}\\\ceq{array con tutti i nodi presenti in rete}}
+		\newtrow
+	}
+	
+	\bvtable{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}{
+			\tcell{reader} & \tcell{\ceq{null}} & \tcell{null}
+		\newtrow
+			\tcell{reader} & \tcell{\ceq{nodo presente in rete}} & 
+			\tcell{Node("/europe/it/lazio/roma/rack-1/bookie-1")}
+		\newtrow
+			\tcell{nodes} & \tcell{\ceq{null}} & \tcell{null}
+		\newtrow
+			\tcell{nodes} & \tcell{\ceq{array con tutti i nodi\\ presenti in rete}} & 
+			\tcell{[Node("/europe/it/lazio/roma/rack-1/bookie-1"),\\
+					Node("/europe/it/lazio/roma/rack-1/bookie-2"),\\
+					Node("/europe/it/lazio/roma/rack-2/bookie-3"),\\
+					Node("/europe/it/lazio/frosinone/rack-3/bookie-4"),\\
+					Node("/europe/it/lombardia/milano/rack-4/bookie-5"),\\
+					Node("/europe/de/region-1/berlino/rack-5/bookie-6"),\\
+					Node("/america/us/california/paloalto/rack-6/bookie-7")]}
+		\newtrow
+	}
+			
+	
+	\reltable{NetworkTopologyImpl}{\bookkeeper}{
+			\tcell{add} &
+			\tcell{14} &
+			\tcell{14} &
+			\tcell{0} &
+			\tcell{
+					tabella \ref{\gettablelabel{testc}{add}{NetworkTopologyImpl}{1}{\bookkeeper}},
+					tabella \ref{\gettablelabel{testc}{add}{NetworkTopologyImpl}{2}{\bookkeeper}}} &
+			\tcell{\unifdist{0.07}} &
+			\tcell{1}
+		\newtrow	
+			\tcell{remove} &
+			\tcell{3} &
+			\tcell{3} &
+			\tcell{0} &
+			\tcell{
+					tabella \ref{\gettablelabel{testc}{remove}{NetworkTopologyImpl}{1}{\bookkeeper}}} &
+			\tcell{\unifdist{0.33}} &
+			\tcell{1}
+		\newtrow
+	}
+	
 \end{document}
