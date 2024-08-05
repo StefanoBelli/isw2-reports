@@ -548,7 +548,7 @@
 	test case e sta volta, non è stato inclusa la classe d'equivalenza relativa
 	a nodi non presenti in rete (sia per il reader che l'array di nodi da
 	ordinare) in quanto di bassa probabilità di utilizzo, e allo scopo di ridurre
-	il numero di test della test suite, numero di test eccessivi.
+	il numero di test della test suite.
 	La classe aggiuntiva che riguarda un array di nodi con almeno un nodo che sia
 	null è utile perchè sta volta non è il riferimento all'array ad essere null,
 	ma un suo elemento (la gestione non viene comunque specificata dalla
@@ -562,15 +562,19 @@
 	L'esito atteso "Il metodo termina l'esecuzione nesuna eccezione lanciata"
 	significa che l'esecuzione del metodo è praticamente una noop (ad esempio
 	se il metodo termina e l'array passato era null, non posso verificare alcun
-	ordinamento). L'implementazione del test è più complessa del normale perchè
+	ordinamento, 
+	ci si aspetta solamente terminazione senza lancio di eccezioni). 
+	L'implementazione del test è più complessa del normale perchè
 	non basta osservare il sorting basato sulla distanza rispetto al reader:
 	se il reader ha più di un nodo alla stessa distanza, questi ultimi (supponiamo ) due nodi possono essere posti da pseudoSortByDistance prima rispetto all'altro
 	o viceversa - dato che l'implementazione di pseudoSortByDistance nel corso del tempo può cambiare,
 	bisogna considerare esatto l'ordinamento anche se i due nodi alla stessa
 	distanza sono scambiati rispetto a quanto previsto da noi (es. 
-	se il nodo reader è \textit{/rack-1/bookie-1} e l'array è \textit{/rack-1/bookie-2} e \textit{/rack-1/bookie-3} allora sia bookie-3 che bookie-2 possono 
+	se il nodo reader è \textit{/rack-1/bookie-1} e l'array è composto da \textit{/rack-1/bookie-2} e \textit{/rack-1/bookie-3} allora sia bookie-3 che bookie-2 possono 
 	trovarsi nell'array sortato prima rispetto all'altro, dato che entrambi sono
-	alla stessa distanza rispetto a bookie-1
+	alla stessa distanza rispetto a bookie-1.
+	Il calcolo della distanza è uguale a
+	quello di getDistance.
 	
 	I test falliti di questo metodo sono tutti quelli che hanno come nodes 
 	un array null (NullPointerException) - questo rivela un non-proper-checking
