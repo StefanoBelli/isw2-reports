@@ -567,7 +567,27 @@
 	per terminare la build e ottenere informazioni sull'adeguatezza dei test e
 	sulle mutazioni.
 
-	\subsection{org.apache.bookkeeper.bookie.FileInfo}
+	\subsection{org.apache.bookkeeper.bookie.BufferedChannel}
+	Dalla 
+	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/bookie/BufferedChannel.html}
+	{documentazione}: \textit{"Provides a buffering layer in front of a FileChannel"}.
+	In altre parole, evita che un file venga scritto continuamente, allocando un buffer in memoria e aspettando
+	che scrittura dopo scrittura, quest'ultimo venga riempito per poi scrivere sul file (tramite metodi di 
+	FileChannel). Questa classe è stata scelta perchè cruciale ai fini di migliorare le prestazioni di \bookkeeper.
+	Il costruttore invocato è 
+	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/bookie/BufferedChannel.html#\%3Cinit\%3E(io.netty.buffer.ByteBufAllocator,java.nio.channels.FileChannel,int)}
+	{quello a 3 argomenti}.
+	
+	%e il FileChannel è soggetto a mocking per evitare di avere
+	%a che fare con il filesystem, lettura di file, setup e cleanup dopo ogni test.
+	
+	\subsubsection{Prima iterazione}
+	Testiamo i metodi 
+	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/bookie/BufferedChannel.html#read(io.netty.buffer.ByteBuf,long,int)}
+	{read} e
+	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/bookie/BufferedChannel.html#write(io.netty.buffer.ByteBuf)}
+	{write}
+	dato che sono fondamentali per scrivere e leggere dal buffer.
 	
 	\newpage
 	\section{Link ai repository}
@@ -1216,5 +1236,53 @@
 			\tcell{$0.834$}
 		\newtrow
 	}
+	
+	%
+	% Iter: 1, Class: BufferedChannel, Project: Bookkeeper
+	%
+	
+	\ceqtable{write}{BufferedChannel}{1}{\bookkeeper}{
+			\tcell{src} & \tcell{
+				\ceq{null}\\
+				\ceq{buffer a lunghezza $\ge$ 0}}
+		\newtrow
+	}
+				
+	\bvtable{write}{BufferedChannel}{1}{\bookkeeper}{
+			\tcell{src} & \tcell{\ceq{null}} & \tcell{null}
+		\newtrow
+			\tcell{src} & \tcell{\ceq{buffer a lunghezza $\ge$ 0}} & \tcell{ByteBuf("")}
+		\newtrow
+	}
+	
+	\testctable{write}{BufferedChannel}{1}{\bookkeeper}{
+			\tcell{null} & \tcell{IOException viene lanciata} & 
+				\tcell{La documentazione specifica\\ 
+						che se una write operation\\
+						fallisce, allora viene lanciata\\
+						una IOException. Non viene\\
+						specificato nulla a riguardo\\
+						del parametro src, assumiamo\\
+						che se src è null,\\
+						allora ricadiamo nel caso\\
+						specificato dalla documentazione.}
+		\newtrow
+			\tcell{ByteBuf("")} & 
+			\tcell{La scrittura nel buffer\\ avviene con successo} & 
+			\tcell{}
+		\newtrow
+			\tcell{ByteBuf("random data")} &
+			\tcell{La scrittura nel buffer\\ avviene con successo} &
+			\tcell{}
+		\newtrow
+			\tcell{ByteBuf("more random data")} &
+			\tcell{La scrittura nel buffer\\ avviene con successo} &
+			\tcell{La scrittura è consecutiva a quella del test case\\
+					precedente, non "sfora" il buffer}
+		\newtrow
+	}
+	
+	
+			
 	
 \end{document}
