@@ -226,6 +226,9 @@
 	testare calcolando anche le metriche di adeguatezza control-flow, data-flow e effettuare mutazioni sui test. 
 	I risultati vengono collezionati e caricati come artefatti della build
 	(file html/xml di JaCoCo, PIT e ba-dua compressi in un archivio zip).
+	Descrivere i sistemi testati non è coerente con lo scopo di questo documento, qualora fosse necessario ai fini 
+	di motivare le scelte e le decisioni intraprese per individuare classi d’equivalenza, boundary analysis,\dots\,
+	si riprenderanno i concetti del sistema di interesse.
 
 	\pagebreak
 
@@ -234,11 +237,7 @@
 	la seguente definzione: \textit{“Apache BookKeeper is a scalable, 
 	fault-tolerant and low latency storage service optimized for append-only workloads”}. 
 	La documentazione di \href{https://bookkeeper.apache.org/archives/docs/master/bookkeeperOverview.html}{overview}
-	fornisce una visione a grandi linee del sistema: 
-	è necessario acquisirne almeno una minima conoscenza per individuare correttamente le classi da testare. 
-	Descrivere il sistema non è coerente con lo scopo di questo documento, qualora fosse necessario ai fini 
-	di motivare le scelte e le decisioni intraprese per individuare classi d’equivalenza, boundary analysis,\dots\,
-	si riprenderanno i concetti di \bookkeeper.
+	fornisce una visione a grandi linee.
 	Il source tree è diviso in vari artifact maven (ognuno ha un proprio pom.xml, la root ha il proprio pom.xml), 
 	si decide di testare le classi dell'artifact bookkeeper-server. \\
 	
@@ -258,38 +257,14 @@
 	For example, a bookie cluster may be consists of many data centers (aka regions) filled with racks of machines. 
 	In this tree structure, leaves represent bookies and inner nodes represent switches/routes that manage traffic in/out of regions or racks.
 	For example, there are 3 bookies in region `A`. They are `bk1`, `bk2` and `bk3`. And their network locations are /region-a/rack-1/bk1, 
-	/region-a/rack-1/bk2 and /region-a/rack-2/bk3."} e rende tutto più chiaro. Infatti, tornando all'
-	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/NetworkTopology.html}{interfaccia NetworkTopology}, vediamo che i metodi
-	manipolano la rete con i \href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/Node.html}{Node} e dalla documentazione di
-	quest'ultima interfaccia viene riportato come: \textit{"The interface defines a node in a network topology. A node may be a leave representing a data node 
-	or an inner node representing a datacenter or rack. Each data has a name and its location in the network is decided by a string with syntax similar to a file name. 
-	For example, a data node's name is hostname:port\# and if it's located at rack "orange" in datacenter "dog", the string representation of its network location is /dog/orange"}.
-	Quindi, concettualmente si ha una rete strutturata ad albero: 
-	\begin{itemize}
-		\item c'è il nodo root
-		\item i nodi interni (inner nodes) che rappresentano i router "associabili" a regions, datacenters, racks, \dots
-		\item le foglie dell'albero (leaves) che rappresentano i bookies veri e propri
-	\end{itemize}
-
-	Ogni nodo ha un nome e si può raggiungere specificandone il path: il carattere di separazione '/' indica i nodi da visitare prima
-	di raggiungere il nodo finale (il percorso parte dalla root e passa per i nodi specificati dalla stringa path, il percorso deve esistere nell'albero o viene creato, dettagli a seguire)
-
-	Se considerassimo ad esempio il ramo 
-	$$ \text{ROOT} \rightarrow \text{datacenter}_1 \rightarrow \text{rack}_1 \rightarrow \text{bookie}_1$$
-
-	\begin{itemize}	
-		\item /: indica la ROOT
-		\item /datacenter-1: indica l'inner node che rappresenta il router del datacenter-1
-		\item /datacenter-1/rack-1: indica l'inner node che rappresenta il router del rack-1 (via datacenter-1)
-		\item /datacenter-1/rack-1/bookie-1: indica il bookie (foglia, via datacenter-1 e rack-1)
-	\end{itemize}
-	
-	Qualsiasi altro path, in questo contesto è invalido (nel senso che per questo semplice albero, costituito da questo singolo ramo,
-	le uniche combinazioni per raggiungere qualsiasi nodo dell'albero sono queste 4).
+	/region-a/rack-1/bk2 and /region-a/rack-2/bk3."} e rende tutto più chiaro (si veda anche la documentazione di \href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/Node.html}{Node}).
+	Quindi, concettualmente si ha una rete strutturata ad albero.
 	Un nodo foglia non può avere come parent il nodo ROOT, all'atto pratico questo significa che il bookie server deve essere necessariamente
 	collocato in un rack/datacenter/\dots (collegato quindi a un router che rappresenti questo rack/datacenter/\dots), inserire un nodo tipo
-	\textit{"/bookie-1"} (essendo bookie$_1$ il server bookie/nodo foglia) non è consentito. Inserire invece \textit{"/rack-1/bookie-1"} va bene
-	, cosi come \textit{"/datacenter-1/rack-1/bookie-1"} e cosi via, incrementando l'altezza dell'albero\dots
+	\textit{"/bookie-1"} (\underline{invalido}: essendo bookie$_1$ il server bookie/nodo foglia) non è consentito. 
+	Inserire invece \textit{"/rack-1/bookie-1"} va bene (\underline{valido}), cosi come \textit{"/datacenter-1/
+	rack-1/bookie-1"} (\underline{invalido}) e cosi via\dots Una volta stabilita l'altezza dell'albero (inserendo
+	il primo ramo), non potranno essere inserite altre foglie ad altezza diversa.
 
 	\subsubsection{Prima iterazione}
 	Si decide di testare i metodi 
@@ -297,17 +272,6 @@
 	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/NetworkTopologyImpl.html#remove(org.apache.bookkeeper.net.Node)}{remove}
 	di \href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/NetworkTopologyImpl.html}{NetworkTopologyImpl} 
 	perchè sono ritenuti i più importanti in quanto permettono di manipolare la topologia di rete aggiungendo e togliendo nodi.
-	L'implementazione dell'interfaccia
-	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/Node.html}{Node} scelta è
-	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/BookieNode.html}{BookieNode} che oltretutto eredita da 
-	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/NodeBase.html}{NodeBase} 
-	che comunque implementa, ovviamente, Node. E un'altra sua implementazione è
-	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/NetworkTopologyImpl.InnerNode.html}{NetworkTopologyImpl.InnerNode} (che eredita da NodeBase).
-	\\
-	Dato che i test di unità vanno effettuati senza considerare l'implementazione e "mettendosi dalla parte dell'utilizzatore", viene scelta BookieNode perchè è l'implementazione di 
-	Node utilizzata dalle classi client che interagiscono con NetworkTopology (al di fuori del package org.apache.bookkeeper.net), mentre non vengono usate le altre due perchè appunto: 
-	NodeBase serve a implementare altri tipi di "Node" e InnerNode è una classe statica all'interno di NetworkTopologyImpl, oltretutto con visibilità package-private.
-	Comunque scegliere implementazioni piuttosto che altre non è di fondamentale importanza in quanto le NetworkTopology nei loro metodi accettano come parametri formali l'interfaccia Node.
 	
 	\textbf{Per il metodo add}: in tabella 
 	\ref{\gettablelabel{ceq}{add}{NetworkTopologyImpl}{1}{\bookkeeper}}
@@ -317,13 +281,7 @@
 	un'oggetto può assumere valore null (tranne per i tipi primitivi), 
 	che sarà quindi un valore da tenere quasi sempre in 
 	considerazione dato che per alcuni metodi può avere un certo significato e/o conseguenze 
-	sull'esecuzione: se ad esempio un qualsiasi metodo assume che un "object" passato come parametro 
-	formale non può essere null - mentre a runtime gli viene effettivamente passato - può verificarsi 
-	una NullPointerException (ad esempio). Alternativamente, i metodi possono gestire la situazione
-	di parametro attuale null (per esempio un ipotetico metodo che ha a che fare con il filesystem
-	e deve restituire il path assoluto a una directory - con null si potrebbe pensare di indicare la 		
-	current working directory senza che l'utilizzatore debba chiamare ulteriori metodi - 
-	FileSystem.getAbsolutePath(null)). La tabella \ref{\gettablelabel{bv}{add}{NetworkTopologyImpl}{1}
+	sull'esecuzione. La tabella \ref{\gettablelabel{bv}{add}{NetworkTopologyImpl}{1}
 	{\bookkeeper}} specifica i valori al bordo (la notazione \textit{Node("path")} presente in tabella indica
 	istanze di nodi che puntano a quel path): in questo caso i nodi con path (non) valido, che (non) 
 	passano il check di \underline{validazione} di NetworkTopologyImpl, sono molteplici, ma il valore al 
@@ -391,7 +349,7 @@
 	oppure \textit{"rimozione di un nodo effettivamente presente nella rete..."})
 		
 	Nella figura \ref{\getpicturelabel{bk/controlflow-NetworkTopologyImpl-1}} sono riportate la
-	control flow coverage e la branch coverage di tutta la classe NetworkTopologyImpl: in particolare,
+	statement coverage e la branch coverage di tutta la classe NetworkTopologyImpl: in particolare,
 	in figura \ref{\getpicturelabel{bk/controlflow-add-NetworkTopologyImpl-1}} per il metodo add e in
 	figura \ref{\getpicturelabel{bk/controlflow-remove-NetworkTopologyImpl-1}} per il metodo remove.
 	
@@ -411,20 +369,19 @@
 	è riportata in dettaglio la data flow coverage per i metodi add e remove.
 	
 	\subsubsection{Seconda iterazione}
-	In generale, osserviamo come sia la control flow coverage (70\%), la data flow coverage (24 def-use 
+	In generale, osserviamo come sia la statement coverage (70\%), la data flow coverage (24 def-use 
 	coperte su 32 totali) e il mutation
 	score (6 mut. killed su 8 totali) del metodo remove siano molto migliori dei rispettivi del metodo
 	add (52\%, 30 def-use coperte su 58 totali, 8 mut. killed su 14 totali).
 	
-	Dato che le metriche di adeguatezza dei test e il mutation score non sono soddisfacenti su add,
-	si decide di progettare ulteriori test case ai fini del miglioramento e del rafforzamento della test
-	suite. Ma non è l'unico motivo: i test sul metodo add eseguiti fino ad ora non hanno tenuto conto
+	I test sul metodo add eseguiti fino ad ora non hanno tenuto conto
 	di ulteriori situazioni che il metodo deve gestire - sono stati eseguiti test case su una rete
 	non popolata e che non ha quindi permesso la verifica dell'esito di inserimenti in ulteriori 
 	casistiche, importanti e decisamente più realistiche 
-	(es. che succede se il nodo che si prova a inserire è già nella rete?).
+	(es. che succede se il nodo che si prova a inserire è già nella rete?). Per il metodo add si
+	progettano altri test case, anche allo scopo di migliorare i criteri di adequacy e il mutation score.
 	
-	Per quanto riguarda il metodo remove, le metriche sono soddisfacenti e si decide di non proseguire 
+	Per quanto riguarda il metodo remove, le metriche sono adeguate e si decide di non proseguire 
 	con un ulteriore iterazione di stesura dei test case: i casi di utilizzo di remove di maggior interesse
 	sono stati coperti dalla test suite.
 	
@@ -580,6 +537,31 @@
 	un array null (NullPointerException) - questo rivela un non-proper-checking
 	degli argomenti passati al metodo.
 	
+	Nelle figure \ref{\getpicturelabel{bk/controlflow-NetworkTopologyImpl-2}}, \ref{\getpicturelabel{bk/controlflow-add-NetworkTopologyImpl-2}}, \ref{\getpicturelabel{bk/controlflow-getDistance-NetworkTopologyImpl-2}} e \ref{\getpicturelabel{bk/controlflow-pseudoSortByDistance-NetworkTopologyImpl-2}} si hanno la stmt. coverage e branch coverage che è aumentata sia per l'intera classe(50\%,51\%) che per il metodo add(71\%,81\%), come da obiettivo.
+	Per getDistance si ottiene 69\%,60\% e pseudoSortByDistance 93\%,83\%.
+	Nelle figure \ref{\getpicturelabel{bk/mutation-NetworkTopologyImpl-2}}, 
+	\ref{\getpicturelabel{bk/mutation-add-NetworkTopologyImpl-2}},
+	\ref{\getpicturelabel{bk/mutation-getDistance-NetworkTopologyImpl-2}},
+	\ref{\getpicturelabel{bk/mutation-pseudoSortByDistance-NetworkTopologyImpl-2}} si ha il report di PIT per
+	le mutazioni: per l'intera classe si ha un'incremento sia della mutation coverage, sia del test strength,
+	mentre per add si ottiene un notevole incremento di mutanti killed: 13 su 14 totali.
+	Per getDistance si ottengono invece 14 mut. killed su 23 totali (includendo sia quelli survived che quelli
+	NO\_COVERAGE, i test non hanno coperto quella linea di codice per cui è stato creato il mutante), mentre per
+	pseudoSortByDistance 13 mut. killed su 20 totali.
+	Nella figura \ref{\getpicturelabel{bk/dataflow-add-NetworkTopologyImpl-2}} si ha la data flow coverage per add,
+	in \ref{\getpicturelabel{bk/dataflow-getDistance-1-NetworkTopologyImpl-2}} per getDistance,
+	in \ref{\getpicturelabel{bk/dataflow-getDistance-2-NetworkTopologyImpl-2}} per getDistance,
+	in \ref{\getpicturelabel{bk/dataflow-pseudoSortByDistance-1-NetworkTopologyImpl-2}} per pseudoSortByDistance,
+	in \ref{\getpicturelabel{bk/dataflow-pseudoSortByDistance-2-NetworkTopologyImpl-2}} per pseudoSortByDistance.
+	Si hanno più report per la stessa classe quando vengono effettuati i test sulla stessa classe da diverse classi
+	di test, quindi, per ottenere la copertura dataflow complessiva, bisogna sovrapporre i report. Viene fatto 
+	per add (è avvenuta un estensione dei test su un'altra classe di test, quindi va contata complessivamente anche
+	la classe dell'iterazione precedente), getDistance e pseudoSortByDistance.
+	Ne risulta che il dataflow coverage è incrementato per add: 48 coppie coperte su 58 totali, per
+	getDistance 42 coperte su 101 per pseudoSortByDistance 55 su 101. Nel resto delle figure, dalla
+	\ref{\getpicturelabel{bk/code-1-add-NetworkTopologyImpl-2}} alla 
+	\ref{\getpicturelabel{bk/code-5-pseudoSortByDistance-NetworkTopologyImpl-2}} viene riportato il codice di test.
+	
 	In tabella \ref{\getreltablelabel{NetworkTopologyImpl}{\bookkeeper}} è
 	presente la reliabilty dei metodi testati. I test falliti vengono disattivati
 	per terminare la build e ottenere informazioni sull'adeguatezza dei test e
@@ -591,7 +573,21 @@
 	\section{Link ai repository}
 	\begin{itemize}
 		\item BookKeeper: \url{https://github.com/StefanoBelli/bookkeeper}
+		\begin{itemize}
+			\item test localizzati in \textit{bookkeeper-server/src/test/java/\dots}
+			\item CI (build$\;\rightarrow\;$test$\;\rightarrow\;$adequacy$\;\rightarrow\;$
+			mutation$\;\rightarrow\;$report-packaging$\;\rightarrow\;$package-upload): 
+			\url{https://github.com/StefanoBelli/bookkeeper/actions/workflows/ste-ci.yml} 
+			(tra gli artifact c'è adequacy-reports.zip per ogni build triggerata)
+		\end{itemize}
 		\item Storm: \url{https://github.com/StefanoBelli/storm}
+		\begin{itemize}
+			\item test localizzati in \textit{storm-client/test/jvm/\dots}
+			\item CI (build$\;\rightarrow\;$test$\;\rightarrow\;$adequacy$\;\rightarrow\;$
+			mutation$\;\rightarrow\;$report-packaging$\;\rightarrow\;$package-upload): 
+			\url{https://github.com/StefanoBelli/storm/actions/workflows/ste-ci.yml}
+			(tra gli artifact c'è adequacy-reports.zip per ogni build triggerata)
+		\end{itemize}
 	\end{itemize}
 	
 	\newpage
@@ -1090,6 +1086,95 @@
 					si assume che anche questo\\ ne sia in grado}
 		\newtrow
 	}
+	
+	\makepicture{17cm}{1.15cm}{bk/controlflow-NetworkTopologyImpl-2}
+				{\classcfcovcaption{NetworkTopologyImpl}{2}{\bookkeeper}}
+				
+	\makepicture{17cm}{0.75cm}{bk/controlflow-add-NetworkTopologyImpl-2}
+				{\methodcfcovcaption{add}{NetworkTopologyImpl}{2}{\bookkeeper}}
+				
+	\makepicture{17cm}{0.75cm}{bk/controlflow-getDistance-NetworkTopologyImpl-2}
+				{\methodcfcovcaption{getDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
+				
+	\makepicture{17cm}{0.75cm}{bk/controlflow-pseudoSortByDistance-NetworkTopologyImpl-2}
+				{\methodcfcovcaption{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
+				
+	\makepicture{17cm}{1.5cm}{bk/mutation-NetworkTopologyImpl-2}
+				{\mutclasscaption{NetworkTopologyImpl}{2}{\bookkeeper}}
+				
+	\makepicture{17cm}{13cm}{bk/mutation-add-NetworkTopologyImpl-2}
+				{\mutmethodcaption{add}{NetworkTopologyImpl}{2}{\bookkeeper}{13}{14}}
+	
+	\makepicture{13cm}{10cm}{bk/mutation-getDistance-NetworkTopologyImpl-2}
+				{\mutmethodcaption{getDistance}{NetworkTopologyImpl}{2}{\bookkeeper}{14}{23}}
+	
+	\makepicture{13cm}{10cm}{bk/mutation-pseudoSortByDistance-NetworkTopologyImpl-2}
+				{\mutmethodcaption{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}{13}{20}}
+				
+	\makepicture{13cm}{24cm}{bk/dataflow-add-NetworkTopologyImpl-2}
+				{\alldfcovcaption{add}{NetworkTopologyImpl}{2}{\bookkeeper}}
+				
+	\makepicture{12cm}{24cm}{bk/dataflow-getDistance-1-NetworkTopologyImpl-2}
+				{\alldfcovcaption{getDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
+				
+	\makepicture{13cm}{24cm}{bk/dataflow-getDistance-2-NetworkTopologyImpl-2}
+				{\alldfcovcaption{getDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
+				
+	\makepicture{13cm}{24cm}{bk/dataflow-pseudoSortByDistance-1-NetworkTopologyImpl-2}
+				{\alldfcovcaption{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
+				
+	\makepicture{13cm}{24cm}{bk/dataflow-pseudoSortByDistance-2-NetworkTopologyImpl-2}
+				{\alldfcovcaption{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
+				
+	\makepicture{17cm}{7cm}{bk/code-1-add-NetworkTopologyImpl-2}
+				{Parametri: \finishcodecaption{add}{NetworkTopologyImpl}{2}{\bookkeeper}}
+				
+	\makepicture{16cm}{12cm}{bk/code-2-add-NetworkTopologyImpl-2}
+				{Test code: \finishcodecaption{add}{NetworkTopologyImpl}{2}{\bookkeeper}}
+				
+	\makepicture{16cm}{12cm}{bk/code-3-add-NetworkTopologyImpl-2}
+				{Popolazione della rete: \finishcodecaption{add}{NetworkTopologyImpl}{2}{\bookkeeper}}
+				
+	\makepicture{17cm}{16cm}{bk/code-1-getDistance-NetworkTopologyImpl-2}
+				{Parametri e test code (argomenti "non comuni", commentati test falliti):
+				\finishcodecaption{getDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
+				
+	\makepicture{17cm}{16cm}{bk/code-2-getDistance-NetworkTopologyImpl-2}
+				{Builder dei nodi (relativi alla figura 
+				\ref{\getpicturelabel{bk/code-1-getDistance-NetworkTopologyImpl-2}}): 
+				\finishcodecaption{getDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
+	
+	\makepicture{17cm}{10cm}{bk/code-3-getDistance-NetworkTopologyImpl-2}
+				{Parametri e test code (argomenti "comuni"): 
+				\finishcodecaption{getDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
+				
+	\makepicture{17cm}{13cm}{bk/code-1-pseudoSortByDistance-NetworkTopologyImpl-2}
+				{Argomenti dei test da eseguire (in totale 7, argomenti "comuni"), gli interi
+				specificati nella coppia indicano la distanza dal nodo a cui corrispondono al nodo reader
+				(quello sullo stesso livello di indent di Arrays.asList): 
+				\finishcodecaption{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
+				
+	\makepicture{17cm}{7.5cm}{bk/code-2-pseudoSortByDistance-NetworkTopologyImpl-2}
+				{Test code (argomenti "comuni"): 
+				\finishcodecaption{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
+				
+	\makepicture{17cm}{5cm}{bk/code-6-pseudoSortByDistance-NetworkTopologyImpl-2}
+				{Sorting basato sulle distanze specificate in figura 
+				\ref{\getpicturelabel{bk/code-1-pseudoSortByDistance-NetworkTopologyImpl-2}}, 
+				l'array qui ordinato verrà confrontato con quanto risulterà dal metodo testato: 
+				\finishcodecaption{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
+				
+	\makepicture{17cm}{16cm}{bk/code-3-pseudoSortByDistance-NetworkTopologyImpl-2}
+				{Metodo di check dell'ordinamento (argomenti "comuni"): 
+				\finishcodecaption{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
+	
+	\makepicture{10cm}{7cm}{bk/code-4-pseudoSortByDistance-NetworkTopologyImpl-2}
+				{Classe utility per indicare nodi e distanze "expected" (argomenti "comuni"): 
+				\finishcodecaption{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
+				
+	\makepicture{17cm}{12cm}{bk/code-5-pseudoSortByDistance-NetworkTopologyImpl-2}
+				{Parametri e test code (argomenti "non comuni"): 
+				\finishcodecaption{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
 			
 	\newpage
 	\reltable{NetworkTopologyImpl}{\bookkeeper}{
