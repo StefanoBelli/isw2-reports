@@ -576,10 +576,9 @@
 	FileChannel). Questa classe è stata scelta perchè cruciale ai fini di migliorare le prestazioni di \bookkeeper.
 	Il costruttore invocato è 
 	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/bookie/BufferedChannel.html#\%3Cinit\%3E(io.netty.buffer.ByteBufAllocator,java.nio.channels.FileChannel,int)}
-	{quello a 3 argomenti}.
-	
-	%e il FileChannel è soggetto a mocking per evitare di avere
-	%a che fare con il filesystem, lettura di file, setup e cleanup dopo ogni test.
+	{quello a 3 argomenti} e il FileChannel è soggetto a mocking per
+	 evitare di avere a che fare con il filesystem, lettura di file, 
+	 setup e cleanup dopo ogni test.
 	
 	\subsubsection{Prima iterazione}
 	Testiamo i metodi 
@@ -1244,45 +1243,197 @@
 	\ceqtable{write}{BufferedChannel}{1}{\bookkeeper}{
 			\tcell{src} & \tcell{
 				\ceq{null}\\
-				\ceq{buffer a lunghezza $\ge$ 0}}
+				\ceq{buffer a lunghezza $\ge 0$}}
 		\newtrow
 	}
 				
 	\bvtable{write}{BufferedChannel}{1}{\bookkeeper}{
 			\tcell{src} & \tcell{\ceq{null}} & \tcell{null}
 		\newtrow
-			\tcell{src} & \tcell{\ceq{buffer a lunghezza $\ge$ 0}} & \tcell{ByteBuf("")}
+			\tcell{src} & \tcell{\ceq{buffer a lunghezza $\ge 0$}} & \tcell{ByteBuf("")}
 		\newtrow
 	}
 	
 	\testctable{write}{BufferedChannel}{1}{\bookkeeper}{
-			\tcell{null} & \tcell{IOException viene lanciata} & 
-				\tcell{La documentazione specifica\\ 
-						che se una write operation\\
-						fallisce, allora viene lanciata\\
-						una IOException. Non viene\\
-						specificato nulla a riguardo\\
-						del parametro src, assumiamo\\
-						che se src è null,\\
-						allora ricadiamo nel caso\\
-						specificato dalla documentazione.}
+			\tcell{null} & 
+			\tcell{NullPointerException\\ viene lanciata} & 
+			\tcell{
+				La documentazione specifica\\ 
+				che se una write operation\\
+				fallisce, allora viene lanciata\\
+				una IOException. Non viene\\
+				specificato nulla a riguardo\\
+				del parametro src.}
 		\newtrow
 			\tcell{ByteBuf("")} & 
-			\tcell{La scrittura nel buffer\\ avviene con successo} & 
+			\tcell{
+				La scrittura nel buffer\\ 
+				avviene con successo} & 
 			\tcell{}
 		\newtrow
 			\tcell{ByteBuf("random data")} &
-			\tcell{La scrittura nel buffer\\ avviene con successo} &
+			\tcell{
+				La scrittura nel buffer\\ 
+				avviene con successo} &
 			\tcell{}
 		\newtrow
 			\tcell{ByteBuf("more random data")} &
-			\tcell{La scrittura nel buffer\\ avviene con successo} &
-			\tcell{La scrittura è consecutiva a quella del test case\\
-					precedente, non "sfora" il buffer}
+			\tcell{
+				La scrittura nel buffer\\ 
+				avviene con successo\\
+				dopo la precedente} &
+			\tcell{}
+		\newtrow
+			\tcell{ByteBuf("again random data")} &
+			\tcell{
+				La scrittura nel buffer\\ 
+				avviene con successo\\
+				dopo le precedenti due} &
+			\tcell{}
 		\newtrow
 	}
 	
+	\newpage
 	
-			
+	\ceqtable{read}{BufferedChannel}{1}{\bookkeeper}{
+			\tcell{dest} & \tcell{\ceq{null}\\\ceq{buffer di destinazione}}
+		\newtrow
+			\tcell{pos} & \tcell{\ceq{$< 0$},\ceq{$\ge 0$}}
+		\newtrow
+			\tcell{length} & \tcell{\ceq{$< 0$}, \ceq{$0$}, \ceq{$\ge 1$}}
+		\newtrow
+	}
+	
+	\bvtable{read}{BufferedChannel}{1}{\bookkeeper}{
+			\tcell{dest} & \tcell{\ceq{null}} & \tcell{null}
+		\newtrow
+			\tcell{dest} & \tcell{\ceq{buffer di destinazione}} & \tcell{ByteBuf()}
+		\newtrow
+			\tcell{pos} & \tcell{\ceq{$< 0$}} & \tcell{$-1$}
+		\newtrow
+			\tcell{pos} & \tcell{\ceq{$\ge 0$}} & \tcell{$0$}
+		\newtrow
+			\tcell{length} & \tcell{\ceq{$< 0$}} & \tcell{$-1$}
+		\newtrow
+			\tcell{length} & \tcell{\ceq{$0$}} & \tcell{$0$}
+		\newtrow
+			\tcell{length} & \tcell{\ceq{$\ge 1$}} & \tcell{1}
+		\newtrow
+	}
+	
+	APPROCCIO MULTIDIM FILTRATO
+	
+	\testctable{read}{BufferedChannel}{1}{\bookkeeper}{
+				\tcell{null, 0, 0} & 
+				\tcell{NullPointerException viene lanciata} & 
+				\tcell{
+					La documentazione non specifica\\
+					nulla a riguardo degli argomenti\\
+					si assume comportamento simile a\\
+					write} 
+		\newtrow
+			\tcell{ByteBuf(), -1, -1} & 
+			\tcell{Exception viene lanciata} & 
+			\tcell{pos e length non possono essere $<$ 0}
+		\newtrow
+			\tcell{ByteBuf(), -1, 0} & 
+			\tcell{Exception viene lanciata} & 
+			\tcell{pos non può essere $<$ 0}
+		\newtrow
+			\tcell{ByteBuf(), 0, -1} & 
+			\tcell{Exception viene lanciata} & 
+			\tcell{length non può essere $<$ 0}
+		\newtrow
+			\tcell{ByteBuf(), 0, 0} & 
+			\tcell{
+				Ritorna 0 (numero bytes letti)\\
+				Buffer destinazione\\ 
+				vuoto} & 
+			\tcell{
+				Lettura di 0 byte dalla\\
+				posizione 0 lecita}
+		\newtrow
+			\tcell{ByteBuf(), 0, 1} & 
+			\tcell{
+				Ritorna 1 (numero bytes letti)\\
+				Buffer destinazione\\ 
+				contenente un byte uguale\\ 
+				a quello in prima\\ 
+				posizione del BufferedChannel} & 
+			 \tcell{
+			 	Lettura di 1 byte dalla\\
+			 	posizione 0}
+		\newtrow
+			\tcell{ByteBuf(), 0, 12} & 
+			\tcell{
+				Ritorna 12 (numero bytes letti)\\
+				Buffer destinazione\\ 
+				contenente 12 byte uguali\\ 
+				ai primi 12 del BufferedChannel} & 
+			\tcell{
+				Lettura di 12 byte dalla\\
+				posizione 0}
+		\newtrow
+			\tcell{ByteBuf(), 1, 12} & 
+			\tcell{
+				Ritorna 12 (numero bytes letti)\\
+				Buffer destinazione\\ 
+				contenente 12 byte uguali\\ 
+				ai 12 byte consecutivi\\
+				alla posizione 0\\ 
+				del BufferedChannel} & 
+			\tcell{
+				Lettura di 12 byte dalla\\
+				posizione 1}
+		\newtrow
+			\tcell{ByteBuf(), 10, 2} & 
+			\tcell{
+				Ritorna 2 (numero bytes letti)\\
+				Buffer destinazione\\ 
+				contenente 2 byte uguali\\ 
+				ai 2 byte consecutivi\\
+				alla posizione 9\\ 
+				del BufferedChannel} & 
+			\tcell{
+				Lettura di 2 byte dalla\\
+				posizione 10}
+		\newtrow
+			\tcell{ByteBuf(), 0, 50} & 
+			\tcell{
+				Ritorna 50 (numero bytes letti)\\
+				Buffer destinazione\\ 
+				contenente 50 byte uguali\\
+				a quelli nel BufferedChannel\\
+				(fino a num. di bytes correnti)} & 
+			\tcell{
+				Lettura di 50 byte dalla\\
+				posizione 0}
+		\newtrow
+			\tcell{ByteBuf(), 40, 10} & 
+			\tcell{
+				Ritorna 10 (numero bytes letti)\\
+				Buffer destinazione\\ 
+				contenente 10 byte uguali\\
+				ai 10 byte consecutivi\\
+				alla posizione 49 del\\
+				a quelli nel BufferedChannel\\
+				(fino a num. di bytes correnti)} & 
+			\tcell{
+				Lettura di 10 byte dalla\\
+				posizione 40}
+		\newtrow
+			\tcell{ByteBuf(), 0, 51} & 
+			\tcell{IOException viene lanciata} & 
+			\tcell{
+				La lettura eccede il numero\\
+				di bytes nel BufferedChannel}
+		\newtrow
+			\tcell{ByteBuf(), 40, 11} & 
+			\tcell{IOException viene lanciata} & 
+			\tcell{
+				La lettura eccede il numero\\
+				di bytes nel BufferedChannel}
+		\newtrow			
+	}
 	
 \end{document}
