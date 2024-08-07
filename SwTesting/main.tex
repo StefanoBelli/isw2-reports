@@ -571,22 +571,71 @@
 	Dalla 
 	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/bookie/BufferedChannel.html}
 	{documentazione}: \textit{"Provides a buffering layer in front of a FileChannel"}.
-	In altre parole, evita che un file venga scritto continuamente, allocando un buffer in memoria e aspettando
+	In altre parole, evita che un file venga scritto/letto continuamente, allocando un buffer in memoria e aspettando
 	che scrittura dopo scrittura, quest'ultimo venga riempito per poi scrivere sul file (tramite metodi di 
 	FileChannel). Questa classe è stata scelta perchè cruciale ai fini di migliorare le prestazioni di \bookkeeper.
 	Il costruttore invocato è 
 	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/bookie/BufferedChannel.html#\%3Cinit\%3E(io.netty.buffer.ByteBufAllocator,java.nio.channels.FileChannel,int)}
-	{quello a 3 argomenti} e il FileChannel è soggetto a mocking per
-	 evitare di avere a che fare con il filesystem, lettura di file, 
-	 setup e cleanup dopo ogni test.
+	{quello a 3 argomenti} e il FileChannel è soggetto a mocking.
 	
 	\subsubsection{Prima iterazione}
+	Per questa prima iterazione, il mock non ha particolare utilità se non quella di evitare la gestione di file.
+	
 	Testiamo i metodi 
 	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/bookie/BufferedChannel.html#read(io.netty.buffer.ByteBuf,long,int)}
 	{read} e
 	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/bookie/BufferedChannel.html#write(io.netty.buffer.ByteBuf)}
 	{write}
 	dato che sono fondamentali per scrivere e leggere dal buffer.
+	
+	\textbf{Per il metodo write}: in tabella \ref{\gettablelabel{ceq}{write}{BufferedChannel}{1}{\bookkeeper}}
+	vengono individuate le classi d'equivalenza, in tabella 
+	\ref{\gettablelabel{bv}{write}{BufferedChannel}{1}{\bookkeeper}} 
+	i boundary values, e i test case sono in tabella 
+	\ref{\gettablelabel{testc}{write}{BufferedChannel}{1}{\bookkeeper}}.
+	ByteBuf() è una classe di netty, documentata 
+	\href{https://netty.io/4.0/api/io/netty/buffer/ByteBuf.html}{qui}, 
+	e la notazione ByteBuf("...") indica la creazione di un buffer ByteBuf con quei bytes.
+	L'esito atteso \textit{"NullPointerException viene lanciata"} è presente perchè è stato necessario
+	guardare poco l'implementazione data la scarsa documentazione del metodo. Non viene effettuato alcun controllo
+	sui parametri passati a write e quindi è lecito aspettarsi una NPE nel caso in cui src è null.
+	L'esito atteso 
+	\textit{"La scrittura nel buffer avviene con successo"}, 
+	\textit{"La scrittura nel buffer avviene con successo dopo la precedente"} e 
+	\textit{"La scrittura nel buffer avviene con successo dopo le precedenti due"}
+	sono molto simili e stanno a significare che la "position"
+	(come documentato 
+	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/bookie/BufferedChannel.html#position()}
+	{qui}) è aumentata pari al numero di byte scritti, cosi come il numero di bytes nel write buffer 
+	(si veda 
+	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/bookie/BufferedChannel.html#getNumOfBytesInWriteBuffer()}
+	{qui}) e ci si aspetta di leggere, dal BufferedChannel, gli stessi dati appena scritti.
+	Se il ByteBuf da cui prelevare i dati per la scrittura è vuoto (secondo test case), allora si verifica
+	solamente che non siano variati position e il numero di bytes nel write buffer.
+	
+	\textbf{Per il metodo read}: in tabella \ref{\gettablelabel{ceq}{read}{BufferedChannel}{1}{\bookkeeper}}
+	vengono individuate le classi d'equivalenza, in tabella 
+	\ref{\gettablelabel{bv}{read}{BufferedChannel}{1}{\bookkeeper}} 
+	i boundary values, e i test case sono in tabella 
+	\ref{\gettablelabel{testc}{read}{BufferedChannel}{1}{\bookkeeper}}.
+	La classe d'equivalenza \ceq{0} di length è stata inserita perchè, al contrario di pos che è un indice, 
+	length per avere senso dovrebbe essere $\ge 1$.
+	Si è optato per un approccio multidimensionale "filtrato": è inutile combinare la destinazione con reference
+	null con le altre classi d'equivalenza e quindi è stato generato solo il primo test case che abbia come
+	dest il valore null.
+	La spiegazione dell'esito atteso \textit{"NullPointerException viene lanciata"} è uguale a quella fornita
+	per il metodo write, mentre \textit{"IllegalArgumentException viene lanciata"} significa che dall'esecuzione
+	del metodo ci si aspetta il lancio di IllegalArgumentException: non è presente nella documentazione, ma è
+	una unchecked exception: può non essere presente nella throws clause di un metodo.
+	I vari esiti \textit{"Buffer destinazione vuoto"} o 
+	\textit{"Buffer destinazione contenente un byte uguale a quello in prima posizione del BufferedChannel"},\dots
+	indicano la stessa cosa: 
+	viene verificato quanto letto in una certa posizione, di una certa lunghezza, 
+	con quanto ci si aspetta di trovare. 
+	L'esito atteso \textit{"IOException viene lanciata"} indica che ci si aspetta il lancio di un'eccezione di tipo 
+	IOException (EOF, non bisogna dimenticarsi che BufferedChannel "avvolge" FileChannel) 
+	se si legge il BufferedChannel oltre quanto scritto fin'ora. 
+	Ovviamente, prima di eseguire i test viene scritto il buffer.
 	
 	\newpage
 	\section{Link ai repository}
