@@ -379,7 +379,7 @@
 	non popolata e che non ha quindi permesso la verifica dell'esito di inserimenti in ulteriori 
 	casistiche, importanti e decisamente più realistiche 
 	(es. che succede se il nodo che si prova a inserire è già nella rete?). Per il metodo add si
-	progettano altri test case, anche allo scopo di migliorare i criteri di adequacy e il mutation score.
+	progettano altri test case, anche allo scopo di migliorarne i criteri di adequacy e il mutation score.
 	
 	Per quanto riguarda il metodo remove, le metriche sono adeguate e si decide di non proseguire 
 	con un ulteriore iterazione di stesura dei test case: i casi di utilizzo di remove di maggior interesse
@@ -545,7 +545,7 @@
 	\ref{\getpicturelabel{bk/mutation-pseudoSortByDistance-NetworkTopologyImpl-2}} si ha il report di PIT per
 	le mutazioni: per l'intera classe si ha un'incremento sia della mutation coverage, sia del test strength,
 	mentre per add si ottiene un notevole incremento di mutanti killed: 13 su 14 totali.
-	Per getDistance si ottengono invece 14 mut. killed su 23 totali (includendo sia quelli survived che quelli
+	Per getDistance si ottengono invece 14 mut. killed su 23 totali (includendo anche quelli
 	NO\_COVERAGE, i test non hanno coperto quella linea di codice per cui è stato creato il mutante), mentre per
 	pseudoSortByDistance 13 mut. killed su 20 totali.
 	Nella figura \ref{\getpicturelabel{bk/dataflow-add-NetworkTopologyImpl-2}} si ha la data flow coverage per add,
@@ -560,7 +560,8 @@
 	Ne risulta che il dataflow coverage è incrementato per add: 48 coppie coperte su 58 totali, per
 	getDistance 42 coperte su 101 per pseudoSortByDistance 55 su 101. Nel resto delle figure, dalla
 	\ref{\getpicturelabel{bk/code-1-add-NetworkTopologyImpl-2}} alla 
-	\ref{\getpicturelabel{bk/code-5-pseudoSortByDistance-NetworkTopologyImpl-2}} viene riportato il codice di test.
+	\ref{\getpicturelabel{bk/code-5-pseudoSortByDistance-NetworkTopologyImpl-2}} 
+	vengono riportate le parti più importanti del codice di test.
 	
 	In tabella \ref{\getreltablelabel{NetworkTopologyImpl}{\bookkeeper}} è
 	presente la reliabilty dei metodi testati. I test falliti vengono disattivati
@@ -571,12 +572,18 @@
 	Dalla 
 	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/bookie/BufferedChannel.html}
 	{documentazione}: \textit{"Provides a buffering layer in front of a FileChannel"}.
-	In altre parole, evita che un file venga scritto/letto continuamente, allocando un buffer in memoria e aspettando
-	che scrittura dopo scrittura, quest'ultimo venga riempito per poi scrivere sul file (tramite metodi di 
-	FileChannel). Questa classe è stata scelta perchè cruciale ai fini di migliorare le prestazioni di \bookkeeper.
-	Il costruttore invocato è 
-	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/bookie/BufferedChannel.html#\%3Cinit\%3E(io.netty.buffer.ByteBufAllocator,java.nio.channels.FileChannel,int)}
-	{quello a 3 argomenti} e il FileChannel è soggetto a mocking.
+	In altre parole, evita che un file venga scritto/letto continuamente, allocando due buffer in memoria:
+	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/bookie/BufferedChannel.html#writeBuffer}
+	{writeBuffer} e 
+	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/bookie/BufferedReadChannel.html#readBuffer}
+	{readBuffer} (da BufferedReadChannel, dalla quale BufferedChannel eredita), con le loro rispettive capacità.
+	
+	Questa classe è stata scelta perchè cruciale ai fini di migliorare le prestazioni di \bookkeeper.
+	
+	Il costruttore invocato è \href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/bookie/BufferedChannel.html#\%3Cinit\%3E(io.netty.buffer.ByteBufAllocator,java.nio.channels.FileChannel,int)}
+	{quello a 3 argomenti}, ma ne esistono altri due meno specializzati. In sostanza, con gli altri due ctor
+	(che è possibile leggere dalla documentazione), si riesce a specificare la readCapacity e la writeCapacity
+	separatamente, oltre che l'unpersistedBytesBound.
 	
 	\subsubsection{Prima iterazione}
 	Per questa prima iterazione, il mock non ha particolare utilità se non quella di evitare la gestione di file.
@@ -586,7 +593,7 @@
 	{read} e
 	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/bookie/BufferedChannel.html#write(io.netty.buffer.ByteBuf)}
 	{write}
-	dato che sono fondamentali per scrivere e leggere dal buffer.
+	dato che sono fondamentali per scrivere e leggere dai buffer.
 	
 	\textbf{Per il metodo write}: in tabella \ref{\gettablelabel{ceq}{write}{BufferedChannel}{1}{\bookkeeper}}
 	vengono individuate le classi d'equivalenza, in tabella 
@@ -636,7 +643,127 @@
 	IOException (EOF, non bisogna dimenticarsi che BufferedChannel "avvolge" FileChannel) 
 	se si legge il BufferedChannel oltre quanto scritto fin'ora. 
 	Ovviamente, prima di eseguire i test viene scritto il buffer.
+	In figura \ref{\getpicturelabel{bk/controlflow-BufferedChannel-1}} è presente la stmt coverage e la branch
+	coverage dell'intera classe, mentre in figura \ref{\getpicturelabel{bk/controlflow-write-BufferedChannel-1}} e 
+	\ref{\getpicturelabel{bk/controlflow-read-BufferedChannel-1}} per i metodi write e read, rispettivamente.
+	In figura \ref{\getpicturelabel{bk/mutation-BufferedChannel-1}} si trovano statistiche sulle mutazioni
+	applicate all'intera classe, mentre in figura \ref{\getpicturelabel{bk/mutation-write-BufferedChannel-1}} e 
+	\ref{\getpicturelabel{bk/mutation-read-BufferedChannel-1}} per write e read.
+	La data flow coverage è disponibile per i metodi write e read in figura 
+	\ref{\getpicturelabel{bk/dataflow-write-BufferedChannel-1}} e 
+	\ref{\getpicturelabel{bk/dataflow-read-BufferedChannel-1}}. Dalla figura 
+	\ref{\getpicturelabel{bk/code-1-write-BufferedChannel-1}} alla figura
+	\ref{\getpicturelabel{bk/code-1-BaseClass-BufferedChannel-1}} è riportato il codice di test.
+	Non è stata usata l'annotazione \textit{@RunWith(MockitoJUnitRunner.class)} nelle classi di test perchè
+	non sono state necessarie le annotazioni \textit{@Mock} e \textit{@InjectMocks} per classi da "mockare" e
+	verso le quali iniettare i mocks: è stato sufficiente usare Mockito.mock(\dots) per mockare FileChannel e poi
+	passare l'istanza di FileChannel direttamente nel costruttore di BufferedChannel 
+	(iniettando il mock "manualmente"). 
+	Questo ha reso possibile l'utilizzo per i test del metodo read, dell'utilizzo dei test parametrizzati.
+	I test falliti sono i primi 4 di read: non vengono gestiti in modo appropriato gli argomenti - il metodo
+	permette l'utilizzo senza errori di argomenti illeciti - l'utilizzatore può pensare di star utilizzando
+	correttamente il metodo quando in realtà non è cosi: il codice client può avere ripercussioni.
 	
+	\subsubsection{Seconda iterazione}
+	Prima di procedere con la seconda iterazione, è opportuno fare qualche considerazione sull'adeguatezza
+	dei test della prima iterazione: solo la stmt. coverage di write è alta (71\%). Questo perchè BufferedChannel
+	è una classe che fa da wrapper a FileChannel - le scritture verso il FileChannel vengono fondamentalmente
+	effettuate quando il buffer è pieno (capacity raggiunta). Le mutazioni timed out presenti nella write
+	sono (probabilmente) 
+	dovute al fatto che il mock di FileChannel per ora restituisce sempre 0 per qualsiasi metodo (se viene
+	forzato il flush mediante un mutante, il codice di flush rimmarrà bloccato in un loop dato che FileChannel
+	restituirà sempre 0 come numero di byte copiati, non permettendo l'avanzamento del contatore del loop).
+	Nel codice di test scritto fin'ora ci si è limitati a scrivere nel buffer, impedendogli di scrivere su file
+	(mantenendo le scritture al di sotto della capacità prefissata).
+	
+	Adesso si vuole testare l'effettivo funzionamento dei metodi quando si eccede la capacità del BufferedChannel
+	e il metodo testato deve interagire con il FileChannel.
+	
+	Il mock permetterà di simulare un FileChannel e il funzionamento
+	dei suoi metodi. Tramite le facilities fornite da Mockito sarà anche possibile verificare quando e come i
+	metodi dell'underlying FileChannel verranno invocati dal BufferedChannel (e quindi se queste invocazioni
+	verranno effettuate correttamente, rispetto alla situazione).
+	Di conseguenza, ci si aspetta un incremento di tutte le metriche di adeguatezza dei test e dei mutanti killed.
+	
+	Il BufferedChannel è un wrapper per FileChannel: vogliamo testare che i metodi read/write effettivamente
+	interagiscano con il FileChannel quando necessario.
+	
+	Semplificando notevolmente:
+	\begin{itemize}
+		\item Si \textbf{scrive verso il FileChannel} quando il write buffer è pieno.
+		\item Si \textbf{legge dal FileChannel} quando i dati richiesti non sono presenti ne nel 
+		read buffer, ne nel write buffer.
+	\end{itemize}
+	
+	E' stato necessario dare uno sguardo
+	all'implementazione al fine di determinare queste informazioni, utili alla stesura dei test case di una
+	funzionalità cruciale di BufferedChannel.
+	
+	Per quanto riguarda l'output dei metodi interessati, ci si aspettano letture/scritture in modo del tutto
+	trasparente: quando leggo da una certa posizione del file, un certo numero di bytes, mi aspetto di leggere
+	byte corretti, a prescindere dalla località delle informazioni (nel buffer di memoria o nella memoria di
+	massa).
+	
+	\textbf{Estensione casi di test metodo write}: in tabella 
+	\ref{\gettablelabel{ceq}{write}{BufferedChannel}{2}{\bookkeeper}},
+	\ref{\gettablelabel{bv}{write}{BufferedChannel}{2}{\bookkeeper}} si trovano le classi d'equivalenza e i
+	boundary values, che sono identici a quelli della prima iterazione.
+	In tabella \ref{\gettablelabel{testc}{write}{BufferedChannel}{2}{\bookkeeper}} vengono riportati i test
+	case, che indicano il valore che può causare o meno il flush del write buffer verso il file (invocazione
+	metodo write di FileChannel).
+	
+	Gli esiti attesi indicano quanto segue:
+	\begin{itemize}
+		\item \textit{"Nessuna interazione con il FileChannel, 
+		i dati passati al metodo in questa invocazione, vengono
+		aggregati nel buffer di scrittura"}: il test case non provoca il flush -
+		la quantità di dati scritta non è sufficiente a riempire il buffer.
+		\item \textit{"Scrittura sul FileChannel del contenuto
+		del buffer. I dati che "avanzano" rimangono nel buffer"}: il test case 
+		provoca il flush - la quantità di dati scritta permette di riempire il
+		buffer.
+	\end{itemize}
+	
+	Prima dell'esecuzione del test case possono essere state eseguite più
+	di una write per pre-riempire il buffer fino ad un certo punto (es. prima di un test
+	case che prevede come esito atteso la scrittura sul FileChannel, vengono precaricati
+	nel buffer una certa quantità di dati random, poi l'esecuzione del test case su quello
+	stesso buffer provocherà il flush).
+	\textit{Nota: nella colonna "Motivazione" della tabella dei test case, con "al momento della scrittura"
+	si intende all'esecuzione del test case, con quel particolare input}.
+	
+	Se il test case prevede come esito atteso il 
+	flush, ci si aspetta l'invocazione di FileChannel.write esattamente una volta
+	da parte del codice di BufferedChannel, 2 volte di FileChannel.position, di trovare un certo numero di
+	bytes rimanenti nel buffer (se ad esempio prima dell'esecuzione del test case nel buffer ho 60 bytes e
+	il test case ne scrive altri 50, allora mi aspetto che, data una capacità di 100 bytes del buffer,
+	dei 110 bytes totali, i primi 100 bytes vengano scritti sul FileChannel e gli ultimi 10 rimangano nel
+	buffer in memoria). La posizione del write buffer deve avanzare, e anche quella del FileChannel.
+	Ci si aspetta inoltre che verso il FileChannel vengano scritti esattamente quei primi 100 bytes,
+	prelevandoli direttamente dalla "runnable" thenAnswer dell'oggetto mocked FileChannel (write)
+	(es. se nel buffer ho 60 caratteri 'x' e invece nel test case ho 50 'h', allora mi aspetto che verso il
+	FileChannel vengano flushati 'x' 60 volte e 'h' 40 volte).
+	
+	Se il test case prevede come esito atteso l'esclusiva aggregazione nel buffer, dato che non 
+	viene riempito fino alla sua massima capacità, allora mi aspetto che FileChannel.write non venga mai chiamato,
+	FileChannel.position venga chiamato solo 1 volta (nel costruttore di BufferedChannel), il numero di bytes
+	nel write buffer è la quantità che già c'era prima più il num. di byte scritti dal test case, la posizione
+	del write buffer avanza, mentre quella del FileChannel rimane a 0. Non viene scritto alcun dato nel
+	FileChannel.
+	
+	SPECIFICA TRASPARENZA E ESITI ATTESI DIVERSI DA QUELLI DELLA PRIMA ITER, CAPACITà BUFCHAN 100, MAXFILESIZE 300
+	
+	PRECISA CHE SONO POSSIBILI MOLTE SITUAZIONI/CONFIGURAZIONI DI BUFFER E FILECHANNEL MA E' IMPOSSIBILE TESTARLE
+	TUTTE, SONO STATE SCELTE LE PIU' "BASI" (RICHIAMANDO AL CONCETTO DI BOUNDARY, 
+	ERRORI AL BORDO DEI PROGRAMMATORI)
+	
+	FAI VEDERE TIMEOUT hasRemaining (ByteBuffer)
+	
+	Per realizzare questi test e permettere la simulazione di FileChannel, è stato utilizzato Mockito e le
+	sue facility (when, thenAnswer, thenReturn, verify, times, \dots).
+	
+	La stima della reliability è in tabella \ref{\getreltablelabel{BufferedChannel}{\bookkeeper}}
+
 	\newpage
 	\section{Link ai repository}
 	\begin{itemize}
@@ -1292,14 +1419,16 @@
 	\ceqtable{write}{BufferedChannel}{1}{\bookkeeper}{
 			\tcell{src} & \tcell{
 				\ceq{null}\\
-				\ceq{buffer a lunghezza $\ge 0$}}
+				\ceq{buffer t.c.\\
+				$0 \le \text{lunghezza} < \text{capacità}_\text{Buf.Chan.}$}}
 		\newtrow
 	}
 				
 	\bvtable{write}{BufferedChannel}{1}{\bookkeeper}{
 			\tcell{src} & \tcell{\ceq{null}} & \tcell{null}
 		\newtrow
-			\tcell{src} & \tcell{\ceq{buffer a lunghezza $\ge 0$}} & \tcell{ByteBuf("")}
+			\tcell{src} & \tcell{\ceq{buffer t.c.\\
+				$0 \le \text{lunghezza} < \text{capacità}_\text{Buf.Chan.}$}} & \tcell{ByteBuf("")}
 		\newtrow
 	}
 	
@@ -1345,7 +1474,7 @@
 	\newpage
 	
 	\ceqtable{read}{BufferedChannel}{1}{\bookkeeper}{
-			\tcell{dest} & \tcell{\ceq{null}\\\ceq{buffer di destinazione}}
+			\tcell{dest} & \tcell{\ceq{null}\\\ceq{buffer di destinazione vuoto}}
 		\newtrow
 			\tcell{pos} & \tcell{\ceq{$< 0$},\ceq{$\ge 0$}}
 		\newtrow
@@ -1356,7 +1485,7 @@
 	\bvtable{read}{BufferedChannel}{1}{\bookkeeper}{
 			\tcell{dest} & \tcell{\ceq{null}} & \tcell{null}
 		\newtrow
-			\tcell{dest} & \tcell{\ceq{buffer di destinazione}} & \tcell{ByteBuf()}
+			\tcell{dest} & \tcell{\ceq{buffer di destinazione vuoto}} & \tcell{ByteBuf()}
 		\newtrow
 			\tcell{pos} & \tcell{\ceq{$< 0$}} & \tcell{$-1$}
 		\newtrow
@@ -1475,5 +1604,256 @@
 				di bytes scritti}
 		\newtrow			
 	}
+	
+	\makepicture{17.5cm}{1.15cm}{bk/controlflow-BufferedChannel-1}
+				{\classcfcovcaption{BufferedChannel}{1}{\bookkeeper}}
+				
+	\makepicture{17cm}{0.75cm}{bk/controlflow-write-BufferedChannel-1}
+				{\methodcfcovcaption{write}{BufferedChannel}{1}{\bookkeeper}}
+				
+	\makepicture{17cm}{0.75cm}{bk/controlflow-read-BufferedChannel-1}
+				{\methodcfcovcaption{read}{BufferedChannel}{1}{\bookkeeper}}
+				
+	\makepicture{17cm}{1cm}{bk/mutation-BufferedChannel-1}
+				{\mutclasscaption{BufferedChannel}{1}{\bookkeeper}}
+				
+	\makepicture{17cm}{10cm}{bk/mutation-write-BufferedChannel-1}
+				{\mutmethodcaption{write}{BufferedChannel}{1}{\bookkeeper}{3}{13}}
+	
+	\makepicture{17cm}{12cm}{bk/mutation-read-BufferedChannel-1}
+				{\mutmethodcaption{read}{BufferedChannel}{1}{\bookkeeper}{9}{26}}
+				
+	\makepicture{13cm}{23cm}{bk/dataflow-write-BufferedChannel-1}
+				{\alldfcovcaption{write}{BufferedChannel}{1}{\bookkeeper}}
+				
+	\makepicture{13cm}{15cm}{bk/dataflow-read-BufferedChannel-1}
+				{\alldfcovcaption{read}{BufferedChannel}{1}{\bookkeeper}}
+				
+	\makepicture{13cm}{16cm}{bk/code-1-write-BufferedChannel-1}
+				{Test cases: \finishcodecaption{write}{BufferedChannel}{1}{\bookkeeper}}
+				
+	\makepicture{10cm}{5cm}{bk/code-2-write-BufferedChannel-1}
+				{After: \finishcodecaption{write}{BufferedChannel}{1}{\bookkeeper}}
+				
+	\makepicture{17cm}{16cm}{bk/code-3-write-BufferedChannel-1}
+				{Metodi utilizzati nei test cases: \finishcodecaption{write}{BufferedChannel}{1}{\bookkeeper}}
+				
+	\makepicture{16cm}{10cm}{bk/code-1-read-BufferedChannel-1}
+				{Costruttore classe di test e paramteri: \finishcodecaption{read}{BufferedChannel}{1}{\bookkeeper}}
+				
+	\makepicture{13cm}{7cm}{bk/code-2-read-BufferedChannel-1}
+				{Metodo di test: \finishcodecaption{read}{BufferedChannel}{1}{\bookkeeper}}
+				
+	\makepicture{16cm}{10cm}{bk/code-1-BaseClass-BufferedChannel-1}
+				{Base class delle classi di test, mocking FileChannel: 
+				\finishcodecaption{}{BufferedChannel}{1}{\bookkeeper}}
+				
+	%
+	% Iter: 2, Class: BufferedChannel, Project: Bookkeeper
+	%
+	
+	\ceqtable{write}{BufferedChannel}{2}{\bookkeeper}{
+			\tcell{src} & \tcell{
+				\ceq{null}\\
+				\ceq{buffer a lunghezza $\ge 0$}}
+		\newtrow
+	}
+				
+	\bvtable{write}{BufferedChannel}{2}{\bookkeeper}{
+			\tcell{src} & \tcell{\ceq{null}} & \tcell{null}
+		\newtrow
+			\tcell{src} & \tcell{\ceq{buffer a lunghezza $\ge 0$}} & \tcell{ByteBuf("")}
+		\newtrow
+	}
+	
+	\testctable{write}{BufferedChannel}{2}{\bookkeeper}{
+			\tcell{ByteBuf("")} & 
+			\tcell{
+				Nessuna interazione con\\
+				il FileChannel, i dati\\
+				passati al metodo in questa\\
+				invocazione, vengono aggregati\\
+				nel buffer di scrittura} & 	
+			\tcell{
+				Il buffer di scrittura\\
+				non si riempie, al momento\\
+				della scrittura, il buffer\\
+				è vuoto}
+		\newtrow
+			\tcell{ByteBuf("random data")} &
+			\tcell{
+				Nessuna interazione con\\
+				il FileChannel, i dati\\
+				passati al metodo in questa\\
+				invocazione, vengono aggregati\\
+				nel buffer di scrittura} &
+			\tcell{
+				Il buffer di scrittura\\
+				non si riempie, al momento\\
+				della scrittura, il buffer\\
+				è vuoto}
+		\newtrow
+			\tcell{ByteBuf("more random data")} &
+			\tcell{
+				Nessuna interazione con\\
+				il FileChannel, i dati\\
+				passati al metodo in questa\\
+				invocazione, vengono aggregati\\
+				nel buffer di scrittura} &
+			\tcell{
+				Il buffer di scrittura\\
+				non si riempie, al momento\\
+				della scrittura, il buffer\\
+				è stato scritto una volta}
+		\newtrow
+			\tcell{ByteBuf("datadatadata")} &
+			\tcell{
+				Nessuna interazione con\\
+				il FileChannel, i dati\\
+				passati al metodo in questa\\
+				invocazione, vengono aggregati\\
+				nel buffer di scrittura} &
+			\tcell{
+				Il buffer di scrittura\\
+				non si riempie, al momento\\
+				della scrittura, il buffer\\
+				è stato scritto due volte}
+		\newtrow
+			\tcell{ByteBuf("again random data")} &
+			\tcell{
+				Scrittura sul FileChannel\\
+				del contenuto del buffer.\\
+				I dati che "avanzano"\\
+				rimangono nel buffer.} &
+			\tcell{
+				Il buffer di scrittura\\
+				è pieno, al momento\\
+				della scrittura, il buffer\\
+				è stato scritto una volta}
+		\newtrow
+			\tcell{ByteBuf("even more random data")} &
+			\tcell{
+				Scrittura sul FileChannel\\
+				del contenuto del buffer.\\
+				I dati che "avanzano"\\
+				rimangono nel buffer.} &
+			\tcell{
+				Il buffer di scrittura\\
+				è pieno, al momento\\
+				della scrittura, il buffer\\
+				è stato scritto due volta}
+		\newtrow
+			\tcell{ByteBuf(generateString(capacity+10))} &
+			\tcell{
+				Tutti i dati passati\\
+				a questa invocazione\\
+				di write devono essere\\
+				scritti nel FileChannel.\\
+				I dati che "avanzano"\\
+				rimangono nel buffer.} &
+			\tcell{
+				Il buffer di scrittura, da vuoto,\\
+				si riempie con una sola\\
+				invocazione. Al momento\\
+				della scrittura, il buffer\\
+				è vuoto}
+		\newtrow
+	}
+	
+	\ceqtable{read}{BufferedChannel}{2}{\bookkeeper}{
+			\tcell{dest} & \tcell{\ceq{buffer di destinazione vuoto}}
+		\newtrow
+			\tcell{pos} & \tcell{\ceq{$\ge 0$}}
+		\newtrow
+			\tcell{length} & \tcell{\ceq{$\ge 1$}}
+		\newtrow
+	}
+	
+	\bvtable{read}{BufferedChannel}{2}{\bookkeeper}{
+			\tcell{dest} & \tcell{\ceq{buffer di destinazione vuoto}} & \tcell{ByteBuf()}
+		\newtrow
+			\tcell{pos} & \tcell{\ceq{$\ge 0$}} & \tcell{$0$}
+		\newtrow
+			\tcell{length} & \tcell{\ceq{$\ge 1$}} & \tcell{1}
+		\newtrow
+	}
+	
+	\testctable{read}{BufferedChannel}{2}{\bookkeeper}{
+			\tcell{ByteBuf(), 0, 100} &
+			\tcell{Buffer destinazione contenente\\
+					i primi 100 byte del file} &
+			\tcell{Lettura di 100 byte dalla\\posizione 0}
+		\newtrow
+			\tcell{ByteBuf(), 0, 140} &
+			\tcell{Buffer destinazione contenente\\
+					i primi 140 byte del file} &
+			\tcell{Lettura di 140 byte dalla\\posizione 0}
+		\newtrow
+			\tcell{ByteBuf(), 105, 10} & 
+			\tcell{Buffer destinazione\\ 
+				contenente 10 byte uguali\\ 
+				ai 10 byte consecutivi\\
+				alla posizione 104\\ 
+				del file} &
+			\tcell{Lettura di 10 byte dalla\\posizione 105}
+		\newtrow
+			\tcell{ByteBuf(), 230, 70} & 
+			\tcell{Buffer destinazione\\ 
+				contenente 70 byte uguali\\ 
+				ai 70 byte consecutivi\\
+				alla posizione 229\\ 
+				del file} &
+			\tcell{Lettura di 70 byte dalla\\posizione 230}
+		\newtrow
+			\tcell{ByteBuf(), 70, 230} & 
+			\tcell{Buffer destinazione\\ 
+				contenente 230 byte uguali\\ 
+				ai 230 byte consecutivi\\
+				alla posizione 69\\ 
+				del file} &
+			\tcell{Lettura di 230 byte dalla\\posizione 70}
+		\newtrow
+			\tcell{ByteBuf(), 0, 300} &
+			\tcell{Buffer destinazione contenente\\
+					tutti i 300 byte del file} &
+			\tcell{Lettura di 300 byte dalla\\posizione 0}
+		\newtrow
+			\tcell{ByteBuf(), 0, 301} &
+			\tcell{IOException viene lanciata} &
+			\tcell{
+					La lettura eccede il numero\\
+					di bytes scritti}
+		\newtrow
+			\tcell{ByteBuf(), 300, 1} &
+			\tcell{IOException viene lanciata} &
+			\tcell{
+					La lettura eccede il numero\\
+					di bytes scritti}
+		\newtrow
+	}
+	
+	\reltable{BufferedChannel}{\bookkeeper}{
+			\tcell{write} &
+			\tcell{$12$} &
+			\tcell{$12$} &
+			\tcell{$0$} & 
+			\tcell{
+				tabella $\ref{\gettablelabel{testc}{write}{BufferedChannel}{1}{\bookkeeper}}$,
+				tabella $\ref{\gettablelabel{testc}{write}{BufferedChannel}{2}{\bookkeeper}}$} &
+			\tcell{\unifdist{0.083}} &
+			\tcell{$1$}
+		\newtrow	
+			\tcell{read} &
+			\tcell{$21$} &
+			\tcell{$15$} &
+			\tcell{$6$} &
+			\tcell{
+				tabella $\ref{\gettablelabel{testc}{read}{BufferedChannel}{1}{\bookkeeper}}$,
+				tabella $\ref{\gettablelabel{testc}{read}{BufferedChannel}{2}{\bookkeeper}}$} &
+			\tcell{\unifdist{0.048}} &
+			\tcell{$0.7$}
+		\newtrow
+	}
+	
 	
 \end{document}
