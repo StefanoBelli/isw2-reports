@@ -321,12 +321,10 @@
 	\textit{ BookieNode buildNode(String netLoc, String bookie) \{ return new
 	BookieNode(BookieId.parse(bookie), netLoc); \} }
 	
-	In figura \ref{\getpicturelabel{bk/code-1-add-NetworkTopologyImpl-1}} è riportata l'implementazione del
-	test parametrizzato.
-	
 	\textbf{Per il metodo remove}: in tabella \ref{\gettablelabel{ceq}{remove}{NetworkTopologyImpl}{1}
 	{\bookkeeper}}, le classi d'equivalenza sono state scelte pensando al fatto che un nodo per essere
-	rimosso deve essere presente (è importante la verifica della presenza del nodo), non è quindi tanto 
+	rimosso deve essere presente (è importante la verifica della presenza del nodo - il nodo è corretto rispetto
+	alla configurazione del SUT attuale), non è quindi tanto 
 	importante se il nodo passato abbia un path valido
 	o meno - nella peggiore delle situazioni il nodo non viene trovato anche se il path è invalido (add 
 	effettua validazione - se fallisce, il nodo non verrà inserito) e quindi non c'è nessuna 
@@ -339,8 +337,7 @@
 	del nodo dalla rete"} prevede la verifica che dopo l'add sia presente nella rete 1 rack e 1 leave 
 	(getNode sul path deve restituire come riferimento lo stesso oggetto Node passato ad add)
 	quindi, dopo la delete, in rete devono esserci 0 rack, 0 leave e getNode sul path deve restiutire 
-	null. Il codice del test case è riportato in figura \ref{\getpicturelabel{bk/code-1-remove-NetworkTopologyImpl-1}}
-	e \ref{\getpicturelabel{bk/code-2-remove-NetworkTopologyImpl-1}}. Anche in questo caso, per la
+	null. Anche in questo caso, per la
 	generazione dei test case è stato seguito l'approccio unidimensionale.
 	
 	Prima dell'esecuzione del metodo di add o remove (a seconda del metodo sottto test), ci si accerta 	
@@ -558,10 +555,7 @@
 	per add (è avvenuta un estensione dei test su un'altra classe di test, quindi va contata complessivamente anche
 	la classe dell'iterazione precedente), getDistance e pseudoSortByDistance.
 	Ne risulta che il dataflow coverage è incrementato per add: 48 coppie coperte su 58 totali, per
-	getDistance 42 coperte su 101 per pseudoSortByDistance 55 su 101. Nel resto delle figure, dalla
-	\ref{\getpicturelabel{bk/code-1-add-NetworkTopologyImpl-2}} alla 
-	\ref{\getpicturelabel{bk/code-5-pseudoSortByDistance-NetworkTopologyImpl-2}} 
-	vengono riportate le parti più importanti del codice di test.
+	getDistance 42 coperte su 101 per pseudoSortByDistance 55 su 101.
 	
 	In tabella \ref{\getreltablelabel{NetworkTopologyImpl}{\bookkeeper}} è
 	presente la reliabilty dei metodi testati. I test falliti vengono disattivati
@@ -651,9 +645,7 @@
 	\ref{\getpicturelabel{bk/mutation-read-BufferedChannel-1}} per write e read.
 	La data flow coverage è disponibile per i metodi write e read in figura 
 	\ref{\getpicturelabel{bk/dataflow-write-BufferedChannel-1}} e 
-	\ref{\getpicturelabel{bk/dataflow-read-BufferedChannel-1}}. Dalla figura 
-	\ref{\getpicturelabel{bk/code-1-write-BufferedChannel-1}} alla figura
-	\ref{\getpicturelabel{bk/code-1-BaseClass-BufferedChannel-1}} è riportato il codice di test.
+	\ref{\getpicturelabel{bk/dataflow-read-BufferedChannel-1}}.
 	Non è stata usata l'annotazione \textit{@RunWith(MockitoJUnitRunner.class)} nelle classi di test perchè
 	non sono state necessarie le annotazioni \textit{@Mock} e \textit{@InjectMocks} per classi da "mockare" e
 	verso le quali iniettare i mocks: è stato sufficiente usare Mockito.mock(\dots) per mockare FileChannel e poi
@@ -751,15 +743,69 @@
 	del write buffer avanza, mentre quella del FileChannel rimane a 0. Non viene scritto alcun dato nel
 	FileChannel.
 	
-	SPECIFICA TRASPARENZA E ESITI ATTESI DIVERSI DA QUELLI DELLA PRIMA ITER, CAPACITà BUFCHAN 100, MAXFILESIZE 300
+	\textbf{Estensione casi di test metodo read}: in tabella 
+	\ref{\gettablelabel{ceq}{read}{BufferedChannel}{2}{\bookkeeper}}, 
+	\ref{\gettablelabel{bv}{read}{BufferedChannel}{2}{\bookkeeper}} e 
+	\ref{\gettablelabel{testc}{read}{BufferedChannel}{2}{\bookkeeper}}
+	sono presenti classi d'eq., boundary values e test cases per la seconda iterazione. Le prime due sono
+	simili a quanto elaborato per la prima iterazione. Sono stati filtrati alcuni casi di test 
+	(e anche le classi d'eq. e boundary values) per cui read
+	dovrebbe restituire errore (es. length < 0). I casi di test prevedono diverse combinazioni di length/pos:
+	prima dell'esecuzione del test case verso il BufferedChannel 
+	(i cui buffer interni sono di dimensione pari a 100 byte) avviene una scrittura di 300 byte (printabili)
+	random (considerata la capacità del buffer interno di 100 byte, avverrà necessariamente almeno una flush) - 
+	ci si aspetta che read ritorni una certa porzione
+	(specificata tramite pos e length, esattamente come nella prima iter.) 
+	di quei byte randomici scritti prima dell'esec. del test, in maniera del tutto
+	trasparente - non ci importa se i byte sono ancora nel buffer di memoria o nel filesystem (gli esiti
+	attesi in tabella sono autoesplicativi). Ovviamente l'approccio seguito nel generare i test case a questo
+	punto è "randomico" (fatta eccezione per gli ultimi due test case), 
+	senza far caso all'implementazione e a come avvenga la lettura (può avvenire dal buffer
+	se i dati sono ancora disponibili, o caricati dal file). Essendo testato una volta sola la read e essendo
+	le combinazioni possibili di pos/length infinite, ne sono state scelte solo alcune.
+	Tramite Mockito è stato simulato FileChannel (write, position e read). 
+	Non viene specificato negli esiti attesi, ma ci si accerta tramite verify di Mockito,
+	che le invocazioni di metodi di FileChannel avvengano correttamente in base al test case 
+	(es. se pos+len >= 100, la buffer size, allora ci si aspetta almeno una invocazione di FileChannel.read perchè 
+	si sfora la capacity del BufferedChannel rispetto alla sua pos. attuale - 
+	bisogna necessariamente prelevare il contenuto richiesto dal file).
 	
-	PRECISA CHE SONO POSSIBILI MOLTE SITUAZIONI/CONFIGURAZIONI DI BUFFER E FILECHANNEL MA E' IMPOSSIBILE TESTARLE
-	TUTTE, SONO STATE SCELTE LE PIU' "BASI" (RICHIAMANDO AL CONCETTO DI BOUNDARY, 
-	ERRORI AL BORDO DEI PROGRAMMATORI)
+	I test falliti espongono un malfunzionamento notevole di BufferedChannel: 
+	in particolare il terz'ultimo e il penultimo test case, se abilitato, 
+	manda la read di BufferedChannel in un endless loop. Questo avviene anche con
+	altre combinazioni, che non sono state incluse nei test case, che ho provato per accertarmi del problema:
+	per esempio la coppia 20, 279, la coppia 40, 260 o anche 40, 257, 
+	ma \textbf{non} la coppia 40,256: anche provando la coppia 41,256 \textbf{non} ci sono problemi: sembra come
+	se len > 256 causasse problemi. \textit{NOTA: ho provato anche senza mockare FileChannel e il risultato
+	è stato lo stesso}.
 	
-	FAI VEDERE TIMEOUT hasRemaining (ByteBuffer)
+	Nelle figure 
+	\ref{\getpicturelabel{bk/controlflow-BufferedChannel-2}}, 
+	\ref{\getpicturelabel{bk/controlflow-write-BufferedChannel-2}} e 
+	\ref{\getpicturelabel{bk/controlflow-read-BufferedChannel-2}} è riportata la stmt.
+	coverage e branch coverage di tutta la classe e singolarmente dei metodi write e read, dove possiamo notare
+	un'incremento notevole di tutte e 6 le metriche, rispetto alla prima iterazione.
+	Anche la line coverage, mutation coverage e il test strength di tutta la classe in figura
+	\ref{\getpicturelabel{bk/mutation-BufferedChannel-2}} 
+	è aumentata, cosi come il num. di mut. killed per i singoli metodi: in figura
+	\ref{\getpicturelabel{bk/mutation-write-BufferedChannel-2}} (per write, 6 mut. killed su 13 totali) e in
+	figura \ref{\getpicturelabel{bk/mutation-read-BufferedChannel-2}} (per read, 15 mut. killed su 26 totali).
+	In figura \ref{\getpicturelabel{bk/mutation-write-BufferedChannel-2-timeout-cause}} è riportato il metodo
+	che porterebbe al timeout per il metodo write durante il mutation testing (linea 130 figura
+	\ref{\getpicturelabel{bk/mutation-write-BufferedChannel-2}}): la mutazione di negazione
+	su hasRemaining (linea 202 figura \ref{\getpicturelabel{bk/mutation-write-BufferedChannel-2-timeout-cause}})
+	causa un loop infinito dato che quando il mock legge dal ByteBuffer, lo consuma interamente (hasRemaining
+	sarà sempre false e la negazione renderà l'espressione complessiva ottenuta sempre vera).
 	
-	Per realizzare questi test e permettere la simulazione di FileChannel, è stato utilizzato Mockito e le
+	La dataflow coverage di read è aumentata notevolmente (figura
+	\ref{\getpicturelabel{bk/dataflow-read-BufferedChannel-2}}, 
+	riportata in parte perchè impossibile da "fittare" completamente): 81 coppie defuse coperte / 118 totali.
+	La dataflow coverage di write è anch'essa aumentata, anche se in misura minore (sovrapp. figure
+	\ref{\getpicturelabel{bk/dataflow-write-1-BufferedChannel-2}} e
+	\ref{\getpicturelabel{bk/dataflow-write-2-BufferedChannel-2}}): 31 coppie defuse coperte / 48 totali.
+	
+	Per realizzare questi test (sia per read che per write)
+	e permettere la simulazione di FileChannel, è stato utilizzato Mockito e le
 	sue facility (when, thenAnswer, thenReturn, verify, times, \dots).
 	
 	La stima della reliability è in tabella \ref{\getreltablelabel{BufferedChannel}{\bookkeeper}}
@@ -875,17 +921,7 @@
 				
 	\makepicture{13cm}{15cm}{bk/dataflow-remove-NetworkTopologyImpl-1}
 				{\alldfcovcaption{remove}{NetworkTopologyImpl}{1}{\bookkeeper}}
-				
-	\makepicture{17cm}{16cm}{bk/code-1-add-NetworkTopologyImpl-1}
-				{Parametri e metodo: \finishcodecaption{add}{NetworkTopologyImpl}{1}{\bookkeeper}}
-				
-	\makepicture{16cm}{10cm}{bk/code-1-remove-NetworkTopologyImpl-1}
-				{Parametri e metodo: \finishcodecaption{remove}{NetworkTopologyImpl}{1}{\bookkeeper}}
-				
-	\makepicture{16cm}{12cm}{bk/code-2-remove-NetworkTopologyImpl-1}
-				{Metodi statici per evitare eccessiva duplicazione di codice di verifica:
-				\finishcodecaption{remove}{NetworkTopologyImpl}{1}{\bookkeeper}}
-				
+
 	%
 	% Iter: 2, Class: NetworkTopologyImpl, Project: Bookkeeper
 	%
@@ -1320,56 +1356,6 @@
 				
 	\makepicture{13cm}{24cm}{bk/dataflow-pseudoSortByDistance-2-NetworkTopologyImpl-2}
 				{\alldfcovcaption{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
-				
-	\makepicture{17cm}{7cm}{bk/code-1-add-NetworkTopologyImpl-2}
-				{Parametri: \finishcodecaption{add}{NetworkTopologyImpl}{2}{\bookkeeper}}
-				
-	\makepicture{16cm}{12cm}{bk/code-2-add-NetworkTopologyImpl-2}
-				{Test code: \finishcodecaption{add}{NetworkTopologyImpl}{2}{\bookkeeper}}
-				
-	\makepicture{16cm}{12cm}{bk/code-3-add-NetworkTopologyImpl-2}
-				{Popolazione della rete: \finishcodecaption{add}{NetworkTopologyImpl}{2}{\bookkeeper}}
-				
-	\makepicture{17cm}{16cm}{bk/code-1-getDistance-NetworkTopologyImpl-2}
-				{Parametri e test code (argomenti "non comuni", commentati test falliti):
-				\finishcodecaption{getDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
-				
-	\makepicture{17cm}{16cm}{bk/code-2-getDistance-NetworkTopologyImpl-2}
-				{Builder dei nodi (relativi alla figura 
-				\ref{\getpicturelabel{bk/code-1-getDistance-NetworkTopologyImpl-2}}): 
-				\finishcodecaption{getDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
-	
-	\makepicture{17cm}{10cm}{bk/code-3-getDistance-NetworkTopologyImpl-2}
-				{Parametri e test code (argomenti "comuni"): 
-				\finishcodecaption{getDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
-				
-	\makepicture{17cm}{13cm}{bk/code-1-pseudoSortByDistance-NetworkTopologyImpl-2}
-				{Argomenti dei test da eseguire (in totale 7, argomenti "comuni"), gli interi
-				specificati nella coppia indicano la distanza dal nodo a cui corrispondono al nodo reader
-				(quello sullo stesso livello di indent di Arrays.asList): 
-				\finishcodecaption{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
-				
-	\makepicture{17cm}{7.5cm}{bk/code-2-pseudoSortByDistance-NetworkTopologyImpl-2}
-				{Test code (argomenti "comuni"): 
-				\finishcodecaption{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
-				
-	\makepicture{17cm}{5cm}{bk/code-6-pseudoSortByDistance-NetworkTopologyImpl-2}
-				{Sorting basato sulle distanze specificate in figura 
-				\ref{\getpicturelabel{bk/code-1-pseudoSortByDistance-NetworkTopologyImpl-2}}, 
-				l'array qui ordinato verrà confrontato con quanto risulterà dal metodo testato: 
-				\finishcodecaption{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
-				
-	\makepicture{17cm}{16cm}{bk/code-3-pseudoSortByDistance-NetworkTopologyImpl-2}
-				{Metodo di check dell'ordinamento (argomenti "comuni"): 
-				\finishcodecaption{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
-	
-	\makepicture{10cm}{7cm}{bk/code-4-pseudoSortByDistance-NetworkTopologyImpl-2}
-				{Classe utility per indicare nodi e distanze "expected" (argomenti "comuni"): 
-				\finishcodecaption{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
-				
-	\makepicture{17cm}{12cm}{bk/code-5-pseudoSortByDistance-NetworkTopologyImpl-2}
-				{Parametri e test code (argomenti "non comuni"): 
-				\finishcodecaption{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
 			
 	\newpage
 	\reltable{NetworkTopologyImpl}{\bookkeeper}{
@@ -1629,25 +1615,6 @@
 	\makepicture{13cm}{15cm}{bk/dataflow-read-BufferedChannel-1}
 				{\alldfcovcaption{read}{BufferedChannel}{1}{\bookkeeper}}
 				
-	\makepicture{13cm}{16cm}{bk/code-1-write-BufferedChannel-1}
-				{Test cases: \finishcodecaption{write}{BufferedChannel}{1}{\bookkeeper}}
-				
-	\makepicture{10cm}{5cm}{bk/code-2-write-BufferedChannel-1}
-				{After: \finishcodecaption{write}{BufferedChannel}{1}{\bookkeeper}}
-				
-	\makepicture{17cm}{16cm}{bk/code-3-write-BufferedChannel-1}
-				{Metodi utilizzati nei test cases: \finishcodecaption{write}{BufferedChannel}{1}{\bookkeeper}}
-				
-	\makepicture{16cm}{10cm}{bk/code-1-read-BufferedChannel-1}
-				{Costruttore classe di test e paramteri: \finishcodecaption{read}{BufferedChannel}{1}{\bookkeeper}}
-				
-	\makepicture{13cm}{7cm}{bk/code-2-read-BufferedChannel-1}
-				{Metodo di test: \finishcodecaption{read}{BufferedChannel}{1}{\bookkeeper}}
-				
-	\makepicture{16cm}{10cm}{bk/code-1-BaseClass-BufferedChannel-1}
-				{Base class delle classi di test, mocking FileChannel: 
-				\finishcodecaption{}{BufferedChannel}{1}{\bookkeeper}}
-				
 	%
 	% Iter: 2, Class: BufferedChannel, Project: Bookkeeper
 	%
@@ -1760,6 +1727,8 @@
 		\newtrow
 	}
 	
+	\newpage
+	
 	\ceqtable{read}{BufferedChannel}{2}{\bookkeeper}{
 			\tcell{dest} & \tcell{\ceq{buffer di destinazione vuoto}}
 		\newtrow
@@ -1832,6 +1801,36 @@
 		\newtrow
 	}
 	
+	\makepicture{17.5cm}{1.25cm}{bk/controlflow-BufferedChannel-2}
+				{\classcfcovcaption{BufferedChannel}{2}{\bookkeeper}}
+				
+	\makepicture{17cm}{0.75cm}{bk/controlflow-write-BufferedChannel-2}
+				{\methodcfcovcaption{write}{BufferedChannel}{2}{\bookkeeper}}
+				
+	\makepicture{17cm}{1cm}{bk/controlflow-read-BufferedChannel-2}
+				{\methodcfcovcaption{read}{BufferedChannel}{2}{\bookkeeper}}
+				
+	\makepicture{17cm}{2cm}{bk/mutation-BufferedChannel-2}
+				{\mutclasscaption{BufferedChannel}{2}{\bookkeeper}}
+				
+	\makepicture{17cm}{10cm}{bk/mutation-write-BufferedChannel-2}
+				{\mutmethodcaption{write}{BufferedChannel}{2}{\bookkeeper}{6}{13}}
+				
+	\makepicture{17cm}{5cm}{bk/mutation-write-BufferedChannel-2-timeout-cause}
+				{Possibile causa dei timeout dell'esecuzione delle mutazioni di write}
+	
+	\makepicture{17cm}{12cm}{bk/mutation-read-BufferedChannel-2}
+				{\mutmethodcaption{read}{BufferedChannel}{2}{\bookkeeper}{15}{26}}
+				
+	\makepicture{13cm}{23cm}{bk/dataflow-write-1-BufferedChannel-2}
+				{\alldfcovcaption{write}{BufferedChannel}{2}{\bookkeeper}}
+				
+	\makepicture{13cm}{23cm}{bk/dataflow-write-2-BufferedChannel-2}
+				{\alldfcovcaption{write}{BufferedChannel}{2}{\bookkeeper}}
+				
+	\makepicture{13cm}{15cm}{bk/dataflow-read-BufferedChannel-2}
+				{\alldfcovcaption{read}{BufferedChannel}{2}{\bookkeeper}}
+				
 	\reltable{BufferedChannel}{\bookkeeper}{
 			\tcell{write} &
 			\tcell{$12$} &
