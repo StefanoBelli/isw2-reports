@@ -228,7 +228,8 @@
 	(file html/xml di JaCoCo, PIT e ba-dua compressi in un archivio zip).
 	Descrivere i sistemi testati non è coerente con lo scopo di questo documento, qualora fosse necessario ai fini 
 	di motivare le scelte e le decisioni intraprese per individuare classi d’equivalenza, boundary analysis,\dots\,
-	si riprenderanno i concetti del sistema di interesse.
+	si riprenderanno i concetti del sistema di interesse. \textit{NOTA: nel documento, con "Estensione dei
+	casi di test del metodo \dots " spesso si intende anche il miglioramento dei test}
 
 	\pagebreak
 
@@ -1486,13 +1487,13 @@
 	}
 	
 	\testctable{read}{BufferedChannel}{1}{\bookkeeper}{
-				\tcell{null, 0, 0} & 
-				\tcell{NullPointerException viene lanciata} & 
-				\tcell{
-					La documentazione non specifica\\
-					nulla a riguardo degli argomenti\\
-					si assume comportamento simile a\\
-					write} 
+			\tcell{null, 0, 0} & 
+			\tcell{NullPointerException viene lanciata} & 
+			\tcell{
+				La documentazione non specifica\\
+				nulla a riguardo degli argomenti\\
+				si assume comportamento simile a\\
+				write} 
 		\newtrow
 			\tcell{ByteBuf(), -1, -1} & 
 			\tcell{IllegalArgumentException viene lanciata} & 
@@ -1621,14 +1622,11 @@
 	
 	\ceqtable{write}{BufferedChannel}{2}{\bookkeeper}{
 			\tcell{src} & \tcell{
-				\ceq{null}\\
 				\ceq{buffer a lunghezza $\ge 0$}}
 		\newtrow
 	}
 				
 	\bvtable{write}{BufferedChannel}{2}{\bookkeeper}{
-			\tcell{src} & \tcell{\ceq{null}} & \tcell{null}
-		\newtrow
 			\tcell{src} & \tcell{\ceq{buffer a lunghezza $\ge 0$}} & \tcell{ByteBuf("")}
 		\newtrow
 	}
