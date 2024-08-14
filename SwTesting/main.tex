@@ -576,13 +576,9 @@
 	Questa classe è stata scelta perchè cruciale ai fini di migliorare le prestazioni di \bookkeeper.
 	
 	Il costruttore invocato è \href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/bookie/BufferedChannel.html#\%3Cinit\%3E(io.netty.buffer.ByteBufAllocator,java.nio.channels.FileChannel,int)}
-	{quello a 3 argomenti}, ma ne esistono altri due meno specializzati. In sostanza, con gli altri due ctor
-	(che è possibile leggere dalla documentazione), si riesce a specificare la readCapacity e la writeCapacity
-	separatamente, oltre che l'unpersistedBytesBound.
+	{quello a 3 argomenti}.
 	
 	\subsubsection{Prima iterazione}
-	Per questa prima iterazione, il mock non ha particolare utilità se non quella di evitare la gestione di file.
-	
 	Testiamo i metodi 
 	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/bookie/BufferedChannel.html#read(io.netty.buffer.ByteBuf,long,int)}
 	{read} e
@@ -635,7 +631,7 @@
 	viene verificato quanto letto in una certa posizione, di una certa lunghezza, 
 	con quanto ci si aspetta di trovare. 
 	L'esito atteso \textit{"IOException viene lanciata"} indica che ci si aspetta il lancio di un'eccezione di tipo 
-	IOException (EOF, non bisogna dimenticarsi che BufferedChannel "avvolge" FileChannel) 
+	IOException (presente nella throws clause del metodo: EOF) 
 	se si legge il BufferedChannel oltre quanto scritto fin'ora. 
 	Ovviamente, prima di eseguire i test viene scritto il buffer.
 	In figura \ref{\getpicturelabel{bk/controlflow-BufferedChannel-1}} è presente la stmt coverage e la branch
@@ -659,18 +655,20 @@
 	
 	\subsubsection{Seconda iterazione}
 	Prima di procedere con la seconda iterazione, è opportuno fare qualche considerazione sull'adeguatezza
-	dei test della prima iterazione: solo la stmt. coverage di write è alta (71\%). Questo perchè BufferedChannel
-	è una classe che fa da wrapper a FileChannel - le scritture verso il FileChannel vengono fondamentalmente
-	effettuate quando il buffer è pieno (capacity raggiunta). Le mutazioni timed out presenti nella write
+	dei test della prima iterazione: solo la stmt. coverage di write è alta (71\%).
+	Analizzando il file HTML di JaCoCo (in particolare le cov. dei metodi read/write), ci rendiamo conto che
+	questo succede perchè BufferedChannel
+	è una classe che fa da wrapper a FileChannel - le scritture/letture verso il FileChannel vengono fondamentalmente
+	effettuate quando il buffer è pieno/vuoto. Le mutazioni timed out presenti nella write
 	sono (probabilmente) 
 	dovute al fatto che il mock di FileChannel per ora restituisce sempre 0 per qualsiasi metodo (se viene
 	forzato il flush mediante un mutante, il codice di flush rimmarrà bloccato in un loop dato che FileChannel
 	restituirà sempre 0 come numero di byte copiati, non permettendo l'avanzamento del contatore del loop).
-	Nel codice di test scritto fin'ora ci si è limitati a scrivere nel buffer, impedendogli di scrivere su file
-	(mantenendo le scritture al di sotto della capacità prefissata).
 	
-	Adesso si vuole testare l'effettivo funzionamento dei metodi quando si eccede la capacità del BufferedChannel
-	e il metodo testato deve interagire con il FileChannel.
+	Adesso si vuole testare l'effettivo funzionamento dei metodi quando si eccede la capacità del BufferedChannel,
+	dato che, come evidente sopratutto dal file HTML di JaCoCo e PIT, questi casi non sono stati coperti.
+	
+	Si vogliono incrementare (almeno) la stmt. coverage e dataflow coverage dei metodi read e write.
 	
 	Il mock permetterà di simulare un FileChannel e il funzionamento
 	dei suoi metodi. Tramite le facilities fornite da Mockito sarà anche possibile verificare quando e come i
@@ -810,7 +808,101 @@
 	sue facility (when, thenAnswer, thenReturn, verify, times, \dots).
 	
 	La stima della reliability è in tabella \ref{\getreltablelabel{BufferedChannel}{\bookkeeper}}
-
+	
+	\section{Progetto \storm}
+	\href{https://storm.apache.org/}{Apache Storm} 
+	è un sistema distribuito per il processamento realtime di dati. 
+	E' scalabile, fault tolerant e sopratutto fornisce elevate prestazioni. 
+	I \href{https://storm.apache.org/releases/current/Concepts.html}{concetti} 
+	alla base di \storm\;sono: 
+	\textbf{spout}(sorgente dati), 
+	\textbf{tuple}(dati), 
+	\textbf{stream}(composto da sequenze di tuple), 
+	\textbf{bolt}(elemento di processamento sugli stream: 
+		\textit{"All processing in topologies is done in bolts. Bolts can do anything from filtering, functions,
+		aggregations, joins, talking to databases, and more."}),
+	\textbf{topology}(un grafo di spouts e bolts, assimilabili a "nodi", connessi mediante streams aka "archi").
+	
+	Se necessario verranno presi in considerazione in modo più approfondito questi o altri concetti.
+	
+	\subsection{org.apache.storm.windowing.WindowManager}
+	\storm\;supporta il windowing degli eventi: 
+	ovvero il processamento di un sottoinsieme di tuple (\textit{eventi})  
+	che rientrano in una finestra scorrevole 
+	(\href{https://storm.apache.org/releases/1.2.3/Windowing.html}
+	{\textit{Windowing Support in Core Storm}}).
+	La gestione corretta della sliding window è cruciale al fine di garantire un corretto processamento
+	delle tuple.
+	
+	La documentazione di riferimento per WindowManager è 
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/WindowManager.html}
+	{questa}
+	
+	\subsubsection{Prima iterazione}
+	Si sceglie di testare i metodi 
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/WindowManager.html#getSlidingCountTimestamps(long,long,int)}
+	{getSlidingCountTimestamps},
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/WindowManager.html#getEventCount(long)}
+	{getEventCount} e
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/WindowManager.html#getEarliestEventTs(long,long)}
+	{getEarliestEventTs}.
+	
+	Prima di testare i metodi indicati, vengono inseriti una serie di eventi in WindowManager.
+	La eviction policy e la trigger policy al momento non sono di interesse.
+	
+	\textbf{Per il metodo getSlidingCountTimestamp}: 
+	in tabella \ref{\gettablelabel{ceq}{getSlidingCountTimestamps}{WindowManager}{1}{\storm}} si hanno le
+	classi d'equivalenza, in tabella \ref{\gettablelabel{bv}{getSlidingCountTimestamps}{WindowManager}{1}{\storm}} i 
+	boundary values, in tabella \ref{\gettablelabel{testc}{getSlidingCountTimestamps}{WindowManager}{1}{\storm}} i test
+	cases generati. L'approccio scelto alla generazione è stato multidimensionale. 
+	\textit{NOTA: per ts(s) si intende timestamp(s)}
+	Nella tabella dei boundary
+	values, per il parametro formale "endTs", data la dipendenza da "startTs", si hanno 6 boundary values,
+	sarebbero da dividere per il numero di classi d'eq. di "startTs" (2): ovvero, per "startTs" < 0 si hanno
+	i corrispondenti "endTs" > 0, = 0, < 0. Stessa cosa per "startTs" $\ge$ 0. Questo si rifletterà sui test
+	cases: il numero di test cases derivati direttamente dalla boundary values analysis non è 2 * 6 * 2 ma  
+	2 * 3 * 2. La scelta di far dipendere la classe d'equivalenza di endTs con startTs è dettata dal fatto che,
+	ovviamente, trattandosi di tempi, se si richiede un tempo iniziale, deve essere "prima" di un tempo finale.
+	L'approccio multidimensionale permette inoltre di testare tutte le varie combinazioni e determinare se il
+	metodo "si accorge" dei problemi legati ai valori attuali passati. Nei test cases, la notazione $t(e_k)$ indica
+	l'istante in ms in cui si è verificato l'evento $e_k$. Invece $t(e_k) \pm a$ indica che all'istante in cui
+	si è verificato l'evento $e_k$ si aggiungono $a$ millisecondi. Per descrivere i test cases generati 
+	oltre a quelli derivati dalla boundary values analysis, bisogna precisare che WindowManager inserisce gli eventi
+	in una struttura dati: verificandosi gli eventi in maniera temporale eventi successivi dovranno avere 
+	necessariamente timestamp maggiore rispetto agli eventi precedenti. Il metodo testato, prevede due parametri in 
+	particolare che sono startTs e endTs: i test sono stati generati facendo "scorrere" startTs e endTs: sugli eventi 
+	verrificatosi: entrambi prima del ts del primo evento (con ts minore di tutti gli altri), con startTs prima del 
+	primo evento e endTs dopo il ts del primo evento ma prima del ts dell'ultimo, startTs e endTs entrambi dopo il ts 
+	del primo evento e prima dell'ultimo, e cosi via, fino a far arrivare sia startTs che endTs dopo il ts 
+	dell'ultimo (con ts maggiore di tutti gli altri). 
+	Il parametro slidingCount è meno documentato, ma serve a effetuare una selezione di timestamp da usare. 
+	In particolare, se è 1 allora tutti gli eventi vengono considerati nel range di ts, se è 2 allora tutti gli
+	eventi in posizione pari (contando per $k=1,2,3,\dots,n$), se è 3, vengono considerati gli eventi di posizione
+	3,6,\dots (questo filtraggio viene effettuato DOPO il filtraggio dato dal ranging).
+	Per gli esiti attesi: \textit{"IllegalArgumentException viene lanciata"} consiste nel verificare che il metodo
+	effettivamente lanci quella particolare eccezione, mentre, con 
+	\textit{"Lista di timestamp: $\{\dots,e_i,\dots\}$"} si intende una lista che contiene il timestamp
+	dell'evento $i$-esimo $\forall i$, nello stesso ordine presentato nell'esito atteso, 
+	\textit{"Lista di timestamp vuota"} è autoesplicativa.
+	Nella motivazione non è scritto, ma bisogna ricordarsi che nella documentazione del metodo è riportato il
+	fatto che l'intervallo è $(\text{startTs},\text{endTs}]$, ovvero, se in startTs passo il valore $t(e_1)$, allora
+	il ts di $e_1$ non verrà mai inserito in lista, mentre lo potrà essere (slidingCount permettendo)
+	se passo, ad esempio, $t(e_1) - 100$ (l'inclusione/esclusione è basata sul valore del timestamp passato).
+	
+	Prima dell'esecuzione dei test, vengono generati 10 eventi fittizi, alla quale vengono assegnati valori random
+	con timestamp che partono da un valore di base (assegnato con 
+	\href{https://docs.oracle.com/javase/8/docs/api/java/lang/System.html#currentTimeMillis--}
+	{System.currentTimeMillis}) e che avanza ogni volta
+	di 200ms a partire dal tempo di base (ogni evento successivo è distanziato 200ms dal precedente).
+	
+	I primi 12 test (riferirsi alla tabella 
+	\ref{\gettablelabel{testc}{getSlidingCountTimestamp}{WindowManager}{1}{\storm}})
+	falliscono, la ragione è dovuta a una malagestione del check della validità degli argomenti attuali passati al
+	metodo (i test falliscono perchè l'eccezione sollevata è IndexOutOfBoundsException, rivelando un tentativo di
+	accesso a un array/vector/\dots errato). Comunque, nonoostante la stima della reliability è applicata su 
+	prof. op. con dist. unif. (per semplicità) bisogna considerare il fatto che in realtà la prob. di utilizzare
+	queste configurazioni di input è notevolmente più bassa di quanto stimato.
+	
 	\newpage
 	\section{Link ai repository}
 	\begin{itemize}
@@ -1406,16 +1498,14 @@
 	\ceqtable{write}{BufferedChannel}{1}{\bookkeeper}{
 			\tcell{src} & \tcell{
 				\ceq{null}\\
-				\ceq{buffer t.c.\\
-				$0 \le \text{lunghezza} < \text{capacità}_\text{Buf.Chan.}$}}
+				\ceq{buffer t.c. $\text{lunghezza} \ge 0$}}
 		\newtrow
 	}
 				
 	\bvtable{write}{BufferedChannel}{1}{\bookkeeper}{
 			\tcell{src} & \tcell{\ceq{null}} & \tcell{null}
 		\newtrow
-			\tcell{src} & \tcell{\ceq{buffer t.c.\\
-				$0 \le \text{lunghezza} < \text{capacità}_\text{Buf.Chan.}$}} & \tcell{ByteBuf("")}
+			\tcell{src} & \tcell{\ceq{buffer t.c. $\text{lunghezza} \ge 0$}} & \tcell{ByteBuf("")}
 		\newtrow
 	}
 	
@@ -1852,5 +1942,168 @@
 		\newtrow
 	}
 	
+	\newpage
+	
+	%
+	% Iter: 1, Class: WindowManager, Project: Storm
+	%
+	
+	\ceqtable{getSlidingCountTimestamps}{WindowManager}{1}{\storm}{
+			\tcell{startTs} &
+			\tcell{\ceq{$< 0$}\\\ceq{$\ge 0$}}
+		\newtrow
+			\tcell{endTs} &
+			\tcell{\ceq{=startTs}\\\ceq{>startTs}\\\ceq{<startTs}} 
+		\newtrow
+			\tcell{slidingCount} &
+			\tcell{\ceq{$< 0$}\\\ceq{$\ge 1$}}
+		\newtrow
+	}
+	
+	\bvtable{getSlidingCountTimestamps}{WindowManager}{1}{\storm}{
+			\tcell{startTs} &
+			\tcell{\ceq{$< 0$}} &
+			\tcell{$-1$}
+		\newtrow
+			\tcell{startTs} &
+			\tcell{\ceq{$\ge 0$}} &
+			\tcell{$0$}
+		\newtrow
+			\tcell{endTs} &
+			\tcell{\ceq{=startTs}} &
+			\tcell{$-1$}
+		\newtrow
+			\tcell{endTs} &
+			\tcell{\ceq{=startTs}} &
+			\tcell{$0$}
+		\newtrow
+			\tcell{endTs} &
+			\tcell{\ceq{>startTs}} &
+			\tcell{$0$}
+		\newtrow
+			\tcell{endTs} &
+			\tcell{\ceq{>startTs}} &
+			\tcell{$1$}
+		\newtrow
+			\tcell{endTs} &
+			\tcell{\ceq{<startTs}} &
+			\tcell{$-2$}
+		\newtrow
+			\tcell{endTs} &
+			\tcell{\ceq{<startTs}} &
+			\tcell{$-1$}
+		\newtrow
+			\tcell{slidingCount} &
+			\tcell{\ceq{$< 0$}} &
+			\tcell{$-1$}
+		\newtrow
+			\tcell{slidingCount} &
+			\tcell{\ceq{$\ge 1$}} &
+			\tcell{$1$}
+		\newtrow
+	}
+	
+	\testctable{getSlidingCountTimestamps}{WindowManager}{1}{\storm}{
+			\tcell{-1,-1,-1} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{startMs, endMs e slidingCount < 0}
+		\newtrow
+			\tcell{-1,0,-1} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{startMs e slidingCount < 0}
+		\newtrow
+			\tcell{-1,-2,-1} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{startMs, endMs e slidingCount < 0,\\ endMs < startMs}
+		\newtrow
+			\tcell{-1,-1,1} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{startMs e endMs < 0}
+		\newtrow
+			\tcell{-1,0,1} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{startMs < 0}
+		\newtrow
+			\tcell{-1,-2,1} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{startMs e endMs < 0,\\ endMs < startMs}
+		\newtrow
+			\tcell{0,0,-1} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{slidingCount < 0}
+		\newtrow
+			\tcell{0,1,-1} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{slidingCount < 0}
+		\newtrow
+			\tcell{0,-1,-1} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{endMs e slidingCount < 0,\\ endMs < startMs}
+		\newtrow
+			\tcell{0,0,1} &
+			\tcell{Lista di timestamp vuota} &
+			\tcell{endMs = startMs}
+		\newtrow
+			\tcell{0,1,1} &
+			\tcell{Lista di timestamp vuota} &
+			\tcell{Nessun evento ricade\\ nel range di timestamp}
+		\newtrow
+			\tcell{0,-1,1} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{endMs < 0,\\ endMs < startMs}
+		\newtrow
+			\tcell{$t(e_1)-100$, $t(e_1)-50$, 1} &
+			\tcell{Lista di timestamp vuota} &
+			\tcell{Nessun evento ricade\\ nel range di timestamp}
+		\newtrow
+			\tcell{$t(e_1)-100$, $t(e_1)+100$, 1} &
+			\tcell{Lista di timestamp: $\{e_1\}$} &
+			\tcell{L'evento $e_1$ ricade\\nel range di timestamp}
+		\newtrow
+			\tcell{$t(e_1)$, $t(e_3)$, 1} &
+			\tcell{Lista di timestamp: $\{e_2,e_3\}$} &
+			\tcell{Gli eventi $e_2$ ed $e_3$ ricadono\\ nel range di timestamp}
+		\newtrow
+			\tcell{$t(e_5)-100$, $t(e_8)+50$, 1} &
+			\tcell{Lista di timestamp: $\{e_5,e_6,e_7,e_8\}$} &
+			\tcell{Gli eventi $e_5,e_6,e_7,e_8$ ricadono\\ nel range di timestamp}
+		\newtrow
+			\tcell{$t(e_8)$, $t(e_{10})+100$, 1} &
+			\tcell{Lista di timestamp: $\{e_9,e_{10}\}$} &
+			\tcell{Gli eventi $e_9,e_{10}$ ricadono\\ nel range di timestamp}
+		\newtrow
+			\tcell{$t(e_{10})+100$, $t(e_{10})+200$, 1} &
+			\tcell{Lista di timestamp vuota} &
+			\tcell{Nessun evento ricade\\ nel range di timestamp}
+		\newtrow
+			\tcell{$t(e_1)-100$, $t(e_1)-50$, 2} &
+			\tcell{Lista di timestamp vuota} &
+			\tcell{Nessun evento ricade\\ nel range di timestamp}
+		\newtrow
+			\tcell{$t(e_1)-100$, $t(e_1)+100$, 2} &
+			\tcell{Lista di timestamp vuota} &
+			\tcell{L'evento $e_1$ ricade\\nel range di timestamp\\
+			ma slidingCount=2\\impedisce al metodo\\ di considerare $e_1$}
+		\newtrow
+			\tcell{$t(e_1)$, $t(e_3)$, 2} &
+			\tcell{Lista di timestamp: $\{e_3\}$} &
+			\tcell{Gli eventi $e_2$ ed $e_3$ ricadono\\
+			nel range di timestamp\\ma slidingCount=2\\impedisce al metodo\\ di considerare $e_2$}
+		\newtrow
+			\tcell{$t(e_5)-100$, $t(e_8)+50$, 2} &
+			\tcell{Lista di timestamp: $\{e_6,e_8\}$} &
+			\tcell{Gli eventi $e_5,e_6,e_7,e_8$ ricadono\\ nel range di timestamp\\
+			ma slidingCount=2\\impedisce al metodo\\ di considerare $e_5,e_7$}
+		\newtrow
+			\tcell{$t(e_8)$, $t(e_{10})+100$, 2} &
+			\tcell{Lista di timestamp: $\{e_{10}\}$} &
+			\tcell{Gli eventi $e_9,e_{10}$ ricadono\\ nel range di timestamp\\
+			ma slidingCount=2\\impedisce al metodo\\ di considerare $e_9$}
+		\newtrow
+			\tcell{$t(e_{10})+100$, $t(e_{10})+200$, 2} &
+			\tcell{Lista di timestamp vuota} &
+			\tcell{Nessun evento ricade\\ nel range di timestamp}
+		\newtrow
+	}
 	
 \end{document}
