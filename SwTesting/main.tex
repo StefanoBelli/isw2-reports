@@ -372,12 +372,11 @@
 	score (6 mut. killed su 8 totali) del metodo remove siano molto migliori dei rispettivi del metodo
 	add (52\%, 30 def-use coperte su 58 totali, 8 mut. killed su 14 totali).
 	
-	I test sul metodo add eseguiti fino ad ora non hanno tenuto conto
-	di ulteriori situazioni che il metodo deve gestire - sono stati eseguiti test case su una rete
-	non popolata e che non ha quindi permesso la verifica dell'esito di inserimenti in ulteriori 
-	casistiche, importanti e decisamente più realistiche 
-	(es. che succede se il nodo che si prova a inserire è già nella rete?). Per il metodo add si
-	progettano altri test case, anche allo scopo di migliorarne i criteri di adequacy e il mutation score.
+	Dall'analisi del report di JaCoCo, si evince che i test eseguiti per add fin'ora, non hanno affrontato
+	molti casi possibili di utilizzo. Per il metodo add si
+	progettano altri test case, allo scopo di testare queste situazioni (in particolare quando la rete è
+	popolata) di conseguenza ci si pone l'obiettivo di aumentare la stmt. coverage e la branch coverage del
+	metodo.
 	
 	Per quanto riguarda il metodo remove, le metriche sono adeguate e si decide di non proseguire 
 	con un ulteriore iterazione di stesura dei test case: i casi di utilizzo di remove di maggior interesse
@@ -881,9 +880,9 @@
 	3,6,\dots (questo filtraggio viene effettuato DOPO il filtraggio dato dal ranging).
 	Per gli esiti attesi: \textit{"IllegalArgumentException viene lanciata"} consiste nel verificare che il metodo
 	effettivamente lanci quella particolare eccezione, mentre, con 
-	\textit{"Lista di timestamp: $\{\dots,e_i,\dots\}$"} si intende una lista che contiene il timestamp
+	\textit{"Ritorno lista di timestamp: $\{\dots,e_i,\dots\}$"} si intende una lista che contiene il timestamp
 	dell'evento $i$-esimo $\forall i$, nello stesso ordine presentato nell'esito atteso, 
-	\textit{"Lista di timestamp vuota"} è autoesplicativa.
+	\textit{"Ritorno lista di timestamp vuota"} è autoesplicativa.
 	Nella motivazione non è scritto, ma bisogna ricordarsi che nella documentazione del metodo è riportato il
 	fatto che l'intervallo è $(\text{startTs},\text{endTs}]$, ovvero, se in startTs passo il valore $t(e_1)$, allora
 	il ts di $e_1$ non verrà mai inserito in lista, mentre lo potrà essere (slidingCount permettendo)
@@ -1435,19 +1434,19 @@
 	\makepicture{13cm}{10cm}{bk/mutation-pseudoSortByDistance-NetworkTopologyImpl-2}
 				{\mutmethodcaption{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}{13}{20}}
 				
-	\makepicture{13cm}{24cm}{bk/dataflow-add-NetworkTopologyImpl-2}
+	\makepicture{8cm}{16cm}{bk/dataflow-add-NetworkTopologyImpl-2}
 				{\alldfcovcaption{add}{NetworkTopologyImpl}{2}{\bookkeeper}}
 				
 	\makepicture{12cm}{24cm}{bk/dataflow-getDistance-1-NetworkTopologyImpl-2}
 				{\alldfcovcaption{getDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
 				
-	\makepicture{13cm}{24cm}{bk/dataflow-getDistance-2-NetworkTopologyImpl-2}
+	\makepicture{12cm}{24cm}{bk/dataflow-getDistance-2-NetworkTopologyImpl-2}
 				{\alldfcovcaption{getDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
 				
-	\makepicture{13cm}{24cm}{bk/dataflow-pseudoSortByDistance-1-NetworkTopologyImpl-2}
+	\makepicture{12cm}{24cm}{bk/dataflow-pseudoSortByDistance-1-NetworkTopologyImpl-2}
 				{\alldfcovcaption{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
 				
-	\makepicture{13cm}{24cm}{bk/dataflow-pseudoSortByDistance-2-NetworkTopologyImpl-2}
+	\makepicture{12cm}{24cm}{bk/dataflow-pseudoSortByDistance-2-NetworkTopologyImpl-2}
 				{\alldfcovcaption{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}}
 			
 	\newpage
@@ -1703,7 +1702,7 @@
 	\makepicture{13cm}{23cm}{bk/dataflow-write-BufferedChannel-1}
 				{\alldfcovcaption{write}{BufferedChannel}{1}{\bookkeeper}}
 				
-	\makepicture{13cm}{15cm}{bk/dataflow-read-BufferedChannel-1}
+	\makepicture{10cm}{12cm}{bk/dataflow-read-BufferedChannel-1}
 				{\alldfcovcaption{read}{BufferedChannel}{1}{\bookkeeper}}
 				
 	%
@@ -2041,11 +2040,11 @@
 			\tcell{endMs e slidingCount < 0,\\ endMs < startMs}
 		\newtrow
 			\tcell{0,0,1} &
-			\tcell{Lista di timestamp vuota} &
+			\tcell{Ritorno lista di timestamp vuota} &
 			\tcell{endMs = startMs}
 		\newtrow
 			\tcell{0,1,1} &
-			\tcell{Lista di timestamp vuota} &
+			\tcell{Ritorno lista di timestamp vuota} &
 			\tcell{Nessun evento ricade\\ nel range di timestamp}
 		\newtrow
 			\tcell{0,-1,1} &
@@ -2053,55 +2052,55 @@
 			\tcell{endMs < 0,\\ endMs < startMs}
 		\newtrow
 			\tcell{$t(e_1)-100$, $t(e_1)-50$, 1} &
-			\tcell{Lista di timestamp vuota} &
+			\tcell{Ritorno lista di timestamp vuota} &
 			\tcell{Nessun evento ricade\\ nel range di timestamp}
 		\newtrow
 			\tcell{$t(e_1)-100$, $t(e_1)+100$, 1} &
-			\tcell{Lista di timestamp: $\{e_1\}$} &
+			\tcell{Ritorno lista di timestamp: $\{e_1\}$} &
 			\tcell{L'evento $e_1$ ricade\\nel range di timestamp}
 		\newtrow
 			\tcell{$t(e_1)$, $t(e_3)$, 1} &
-			\tcell{Lista di timestamp: $\{e_2,e_3\}$} &
+			\tcell{Ritorno lista di timestamp: $\{e_2,e_3\}$} &
 			\tcell{Gli eventi $e_2$ ed $e_3$ ricadono\\ nel range di timestamp}
 		\newtrow
 			\tcell{$t(e_5)-100$, $t(e_8)+50$, 1} &
-			\tcell{Lista di timestamp: $\{e_5,e_6,e_7,e_8\}$} &
+			\tcell{Ritorno lista di timestamp: $\{e_5,e_6,e_7,e_8\}$} &
 			\tcell{Gli eventi $e_5,e_6,e_7,e_8$ ricadono\\ nel range di timestamp}
 		\newtrow
 			\tcell{$t(e_8)$, $t(e_{10})+100$, 1} &
-			\tcell{Lista di timestamp: $\{e_9,e_{10}\}$} &
+			\tcell{Ritorno lista di timestamp: $\{e_9,e_{10}\}$} &
 			\tcell{Gli eventi $e_9,e_{10}$ ricadono\\ nel range di timestamp}
 		\newtrow
 			\tcell{$t(e_{10})+100$, $t(e_{10})+200$, 1} &
-			\tcell{Lista di timestamp vuota} &
+			\tcell{Ritorno lista di timestamp vuota} &
 			\tcell{Nessun evento ricade\\ nel range di timestamp}
 		\newtrow
 			\tcell{$t(e_1)-100$, $t(e_1)-50$, 2} &
-			\tcell{Lista di timestamp vuota} &
+			\tcell{Ritorno lista di timestamp vuota} &
 			\tcell{Nessun evento ricade\\ nel range di timestamp}
 		\newtrow
 			\tcell{$t(e_1)-100$, $t(e_1)+100$, 2} &
-			\tcell{Lista di timestamp vuota} &
+			\tcell{Ritorno lista di timestamp vuota} &
 			\tcell{L'evento $e_1$ ricade\\nel range di timestamp\\
 			ma slidingCount=2\\impedisce al metodo\\ di considerare $e_1$}
 		\newtrow
 			\tcell{$t(e_1)$, $t(e_3)$, 2} &
-			\tcell{Lista di timestamp: $\{e_3\}$} &
+			\tcell{Ritorno lista di timestamp: $\{e_3\}$} &
 			\tcell{Gli eventi $e_2$ ed $e_3$ ricadono\\
 			nel range di timestamp\\ma slidingCount=2\\impedisce al metodo\\ di considerare $e_2$}
 		\newtrow
 			\tcell{$t(e_5)-100$, $t(e_8)+50$, 2} &
-			\tcell{Lista di timestamp: $\{e_6,e_8\}$} &
+			\tcell{Ritorno lista di timestamp: $\{e_6,e_8\}$} &
 			\tcell{Gli eventi $e_5,e_6,e_7,e_8$ ricadono\\ nel range di timestamp\\
 			ma slidingCount=2\\impedisce al metodo\\ di considerare $e_5,e_7$}
 		\newtrow
 			\tcell{$t(e_8)$, $t(e_{10})+100$, 2} &
-			\tcell{Lista di timestamp: $\{e_{10}\}$} &
+			\tcell{Ritorno lista di timestamp: $\{e_{10}\}$} &
 			\tcell{Gli eventi $e_9,e_{10}$ ricadono\\ nel range di timestamp\\
 			ma slidingCount=2\\impedisce al metodo\\ di considerare $e_9$}
 		\newtrow
 			\tcell{$t(e_{10})+100$, $t(e_{10})+200$, 2} &
-			\tcell{Lista di timestamp vuota} &
+			\tcell{Ritorno lista di timestamp vuota} &
 			\tcell{Nessun evento ricade\\ nel range di timestamp}
 		\newtrow
 	}
