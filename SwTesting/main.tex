@@ -840,11 +840,9 @@
 	\subsubsection{Prima iterazione}
 	Si sceglie di testare i metodi 
 	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/WindowManager.html#getSlidingCountTimestamps(long,long,int)}
-	{getSlidingCountTimestamps},
+	{getSlidingCountTimestamps} e
 	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/WindowManager.html#getEventCount(long)}
-	{getEventCount} e
-	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/WindowManager.html#getEarliestEventTs(long,long)}
-	{getEarliestEventTs}.
+	{getEventCount}.
 	
 	Prima di testare i metodi indicati, vengono inseriti una serie di eventi in WindowManager.
 	La eviction policy e la trigger policy al momento non sono di interesse.
@@ -895,7 +893,7 @@
 	di 200ms a partire dal tempo di base (ogni evento successivo è distanziato 200ms dal precedente).
 	
 	I primi 12 test (riferirsi alla tabella 
-	\ref{\gettablelabel{testc}{getSlidingCountTimestamp}{WindowManager}{1}{\storm}})
+	\ref{\gettablelabel{testc}{getSlidingCountTimestamps}{WindowManager}{1}{\storm}})
 	falliscono, la ragione è dovuta a una malagestione del check della validità degli argomenti attuali passati al
 	metodo (i test falliscono perchè l'eccezione sollevata è IndexOutOfBoundsException, rivelando un tentativo di
 	accesso a un array/vector/\dots errato). Comunque, nonoostante la stima della reliability è applicata su 
@@ -2104,5 +2102,57 @@
 			\tcell{Nessun evento ricade\\ nel range di timestamp}
 		\newtrow
 	}
+	
+	\newpage
+	
+	\ceqtable{getEventCount}{WindowManager}{1}{\storm}{
+			\tcell{referenceTime} & 
+			\tcell{\ceq{$< 0$}\\\ceq{$\ge 0$}}
+		\newtrow
+	}
+	
+	\bvtable{getEventCount}{WindowManager}{1}{\storm}{
+			\tcell{referenceTime} & 
+			\tcell{\ceq{$< 0$}} &
+			\tcell{$-1$}
+		\newtrow
+			\tcell{referenceTime} &
+			\tcell{\ceq{$\ge 0$}} &
+			\tcell{$0$}
+		\newtrow
+	}
+	
+	\testctable{getEventCount}{WindowManager}{1}{\storm}{
+			\tcell{$-1$} &
+			\tcell{IndexOutOfBoundsException viene lanciata} &
+			\tcell{Non essendo specificato,\\ il comportamento si suppone essere\\ simile al metodo precedente}
+		\newtrow
+			\tcell{$0$} &
+			\tcell{IndexOutOfBoundsException viene lanciata} &
+			\tcell{Non essendo specificato,\\ il comportamento si suppone essere\\ simile al metodo precedente}
+		\newtrow
+			\tcell{$t(e_1)-100$} &
+			\tcell{Ritorno valore 0} &
+			\tcell{Nessun timestamp di evento\\ rientra ($t(e_1)$ è il minimo)}
+		\newtrow
+			\tcell{$t(e_1)$} &
+			\tcell{Ritorno valore 1} &
+			\tcell{Solo il timestamp $t(e_1)$ rientra}
+		\newtrow
+			\tcell{$t(e_5)$} &
+			\tcell{Ritorno valore 5} &
+			\tcell{I timestamp da $t(e_1)\dots t(e_5)$ rientrano}
+		\newtrow
+			\tcell{$t(e_{10})$} &
+			\tcell{Ritorno valore 10} &
+			\tcell{Tutti i timestamp di eventi\\ rientrano ($t(e_{10})$ è il massimo)}
+		\newtrow
+			\tcell{$t(e_{10})+100$} &
+			\tcell{Ritorno valore 10} &
+			\tcell{Tutti i timestamp di eventi\\ rientrano ($t(e_{10})$ è il massimo)}
+		\newtrow
+	}
+	
+	\newpage
 	
 \end{document}
