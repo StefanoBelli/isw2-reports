@@ -86,7 +86,7 @@
 \newcommand{\Intreltable}[3]{
 	\Intmaketable{#1}{#2}{|l|l|l|l|l|l|l|}{
 	\hline
-	\thead{Metodo} & \thead{\# test totali} & \thead{\# test pass.} & \thead{\# test fail.} & \thead{Rif. num. tab. prof. op.} &
+	\thead{Metodo} & \thead{\# test totali} & \thead{\# test pass.} & \thead{\# test fail.} & \thead{Prof. op.} &
 	\thead{Distribuzione} & \thead{Reliability}\\
 	\hline
 	\hline
@@ -347,24 +347,26 @@
 	oppure \textit{"rimozione di un nodo effettivamente presente nella rete..."})
 		
 	Nella figura \ref{\getpicturelabel{bk/controlflow-NetworkTopologyImpl-1}} sono riportate la
-	statement coverage e la branch coverage di tutta la classe NetworkTopologyImpl: in particolare,
-	in figura \ref{\getpicturelabel{bk/controlflow-add-NetworkTopologyImpl-1}} per il metodo add e in
-	figura \ref{\getpicturelabel{bk/controlflow-remove-NetworkTopologyImpl-1}} per il metodo remove.
+	statement coverage (27\%) e la branch coverage (16\%) di tutta la classe NetworkTopologyImpl: in particolare,
+	in figura \ref{\getpicturelabel{bk/controlflow-add-NetworkTopologyImpl-1}} per il metodo add (52\%,54\%) e in
+	figura \ref{\getpicturelabel{bk/controlflow-remove-NetworkTopologyImpl-1}} per il metodo remove (70\%,66\%).
 	
 	In figura \ref{\getpicturelabel{bk/mutation-NetworkTopologyImpl-1}} è riportato un summary degli
-	score sulla mutazione dell'intera classe: in figura \ref{\getpicturelabel{bk/mutation-add-NetworkTopologyImpl-1}} 
+	score sulla mutazione dell'intera classe (lncov: 28\%, mutcov: 17\%, ts: 74\%): in figura \ref{\getpicturelabel{bk/mutation-add-NetworkTopologyImpl-1}} 
 	e \ref{\getpicturelabel{bk/mutation-remove-NetworkTopologyImpl-1}} vengono
 	specificate le righe nelle quali PITest ha eseguito delle modifiche (mutanti) e quali di queste 
 	modifiche sono state rilevate (killed, in verde) e quali no (in rosso). Nella caption viene 
 	riportato
-	il numero di mutanti killed su numero di mutanti totali. Bisogna considerare che se la riga è rossa
+	il numero di mutanti killed su numero di mutanti totali (8/14 per add e 6/8 per remove). 
+	Bisogna considerare che se la riga è rossa
 	e il numero riportato a sinistra sul numero di mutanti applicati alla riga è $>$ 1, allora bisogna
 	controllare bene perchè se almeno uno è sopravvissuto, la riga diventa rossa (non andremmo a contare
 	potenziali mutanti killed).
 	
 	In figura \ref{\getpicturelabel{bk/dataflow-add-NetworkTopologyImpl-1}} e 
 	\ref{\getpicturelabel{bk/dataflow-remove-NetworkTopologyImpl-1}} 
-	è riportata in dettaglio la data flow coverage per i metodi add e remove.
+	è riportata in dettaglio la data flow coverage per i metodi add (30 coppie def-use / 58 totali) e 
+	remove (24 coppie def-use / 32 totali).
 	
 	\subsubsection{Seconda iterazione}
 	In generale, osserviamo come sia la statement coverage (70\%), la data flow coverage (24 def-use 
@@ -378,9 +380,8 @@
 	popolata). Ci si pone l'obiettivo di aumentare la stmt. coverage e la branch coverage del
 	metodo add.
 	
-	Per quanto riguarda il metodo remove, le metriche sono adeguate e si decide di non proseguire 
-	con un ulteriore iterazione di stesura dei test case: i casi di utilizzo di remove di maggior interesse
-	sono stati coperti dalla test suite.
+	Per quanto riguarda il metodo remove, i casi di utilizzo di maggior interesse 
+	sono stati coperti dalla test suite: non si progettano ulteriori test case.
 	
 	Data l'importanza della classe, si decide di testare anche i metodi 
 	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/NetworkTopologyImpl.html#getDistance(org.apache.bookkeeper.net.Node,org.apache.bookkeeper.net.Node)}
@@ -540,7 +541,7 @@
 	\ref{\getpicturelabel{bk/mutation-add-NetworkTopologyImpl-2}},
 	\ref{\getpicturelabel{bk/mutation-getDistance-NetworkTopologyImpl-2}},
 	\ref{\getpicturelabel{bk/mutation-pseudoSortByDistance-NetworkTopologyImpl-2}} si ha il report di PIT per
-	le mutazioni: per l'intera classe si ha un'incremento sia della mutation coverage, sia del test strength,
+	le mutazioni: per l'intera classe (lncov: 50\%, mutcov: 43\%, ts: 81\%) si ha un'incremento sia della mutation coverage, sia del test strength,
 	mentre per add si ottiene un notevole incremento di mutanti killed: 13 su 14 totali.
 	Per getDistance si ottengono invece 14 mut. killed su 23 totali (includendo anche quelli
 	NO\_COVERAGE, i test non hanno coperto quella linea di codice per cui è stato creato il mutante), mentre per
@@ -634,12 +635,15 @@
 	se si legge il BufferedChannel oltre quanto scritto fin'ora. 
 	Ovviamente, prima di eseguire i test viene scritto il buffer.
 	In figura \ref{\getpicturelabel{bk/controlflow-BufferedChannel-1}} è presente la stmt coverage e la branch
-	coverage dell'intera classe, mentre in figura \ref{\getpicturelabel{bk/controlflow-write-BufferedChannel-1}} e 
-	\ref{\getpicturelabel{bk/controlflow-read-BufferedChannel-1}} per i metodi write e read, rispettivamente.
+	coverage dell'intera classe (48\%,31\%), 
+	mentre in figura \ref{\getpicturelabel{bk/controlflow-write-BufferedChannel-1}} e 
+	\ref{\getpicturelabel{bk/controlflow-read-BufferedChannel-1}} per i metodi 
+	write (71\%,50\%) e read (40\%,33\%), rispettivamente.
 	In figura \ref{\getpicturelabel{bk/mutation-BufferedChannel-1}} si trovano statistiche sulle mutazioni
-	applicate all'intera classe, mentre in figura \ref{\getpicturelabel{bk/mutation-write-BufferedChannel-1}} e 
-	\ref{\getpicturelabel{bk/mutation-read-BufferedChannel-1}} per write e read.
-	La data flow coverage è disponibile per i metodi write e read in figura 
+	applicate all'intera classe (lncov: 50\%, mutcov: 32\%, ts: 70\%), mentre in figura \ref{\getpicturelabel{bk/mutation-write-BufferedChannel-1}} e 
+	\ref{\getpicturelabel{bk/mutation-read-BufferedChannel-1}} per write (3 mut. killed / 13 tot.) e read (9 mut. killed / 26 tot.).
+	La data flow coverage è disponibile per i metodi write (22 coppie def-use / 48 totali) e 
+	read (31 coppie def-use / 118 totali) in figura 
 	\ref{\getpicturelabel{bk/dataflow-write-BufferedChannel-1}} e 
 	\ref{\getpicturelabel{bk/dataflow-read-BufferedChannel-1}}.
 	Non è stata usata l'annotazione \textit{@RunWith(MockitoJUnitRunner.class)} nelle classi di test perchè
@@ -661,8 +665,10 @@
 	effettuate quando il buffer è pieno/vuoto. Le mutazioni timed out presenti nella write
 	sono (probabilmente) 
 	dovute al fatto che il mock di FileChannel per ora restituisce sempre 0 per qualsiasi metodo (se viene
-	forzato il flush mediante un mutante, il codice di flush rimmarrà bloccato in un loop dato che FileChannel
-	restituirà sempre 0 come numero di byte copiati, non permettendo l'avanzamento del contatore del loop).
+	forzato il flush mediante un mutante, il codice di flush rimmarrà bloccato in un loop dato che 
+	il ByteBuffer passato in input al FileChannel
+	restituirà sempre un numero maggiore di 0 sul metodo hasRemaining, 
+	non permettendo l'uscita dal loop).
 	
 	Adesso si vuole testare l'effettivo funzionamento dei metodi quando si eccede la capacità del BufferedChannel,
 	dato che, come evidente sopratutto dal file HTML di JaCoCo e PIT, questi casi non sono stati coperti.
@@ -670,13 +676,10 @@
 	Si vogliono incrementare (almeno) la stmt. coverage e dataflow coverage dei metodi read e write.
 	
 	Il mock permetterà di simulare un FileChannel e il funzionamento
-	dei suoi metodi. Tramite le facilities fornite da Mockito sarà anche possibile verificare quando e come i
+	dei suoi metodi. 
+	In aggiunta, tramite le facilities fornite da Mockito sarà anche possibile verificare quando e come i
 	metodi dell'underlying FileChannel verranno invocati dal BufferedChannel (e quindi se queste invocazioni
 	verranno effettuate correttamente, rispetto alla situazione).
-	Di conseguenza, ci si aspetta un incremento di tutte le metriche di adeguatezza dei test e dei mutanti killed.
-	
-	Il BufferedChannel è un wrapper per FileChannel: vogliamo testare che i metodi read/write effettivamente
-	interagiscano con il FileChannel quando necessario.
 	
 	Semplificando notevolmente:
 	\begin{itemize}
@@ -693,6 +696,8 @@
 	trasparente: quando leggo da una certa posizione del file, un certo numero di bytes, mi aspetto di leggere
 	byte corretti, a prescindere dalla località delle informazioni (nel buffer di memoria o nella memoria di
 	massa).
+	
+	Di conseguenza, ci si aspetta un incremento di tutte le metriche di adeguatezza dei test e dei mutanti killed.
 	
 	\textbf{Estensione casi di test metodo write}: in tabella 
 	\ref{\gettablelabel{ceq}{write}{BufferedChannel}{2}{\bookkeeper}},
@@ -781,9 +786,9 @@
 	\ref{\getpicturelabel{bk/controlflow-BufferedChannel-2}}, 
 	\ref{\getpicturelabel{bk/controlflow-write-BufferedChannel-2}} e 
 	\ref{\getpicturelabel{bk/controlflow-read-BufferedChannel-2}} è riportata la stmt.
-	coverage e branch coverage di tutta la classe e singolarmente dei metodi write e read, dove possiamo notare
+	coverage e branch coverage di tutta la classe (75\%,52\%) e singolarmente dei metodi write (74\%,60\%) e read (91\%,66\%), dove possiamo notare
 	un'incremento notevole di tutte e 6 le metriche, rispetto alla prima iterazione.
-	Anche la line coverage, mutation coverage e il test strength di tutta la classe in figura
+	Anche la line coverage (71\%), mutation coverage (59\%) e il test strength (81\%) di tutta la classe in figura
 	\ref{\getpicturelabel{bk/mutation-BufferedChannel-2}} 
 	è aumentata, cosi come il num. di mut. killed per i singoli metodi: in figura
 	\ref{\getpicturelabel{bk/mutation-write-BufferedChannel-2}} (per write, 6 mut. killed su 13 totali) e in
@@ -797,10 +802,10 @@
 	
 	La dataflow coverage di read è aumentata notevolmente (figura
 	\ref{\getpicturelabel{bk/dataflow-read-BufferedChannel-2}}, 
-	riportata in parte perchè impossibile da "fittare" completamente): 81 coppie defuse coperte / 118 totali.
+	riportata in parte perchè impossibile da "fittare" completamente): 81 coppie def-use coperte / 118 totali.
 	La dataflow coverage di write è anch'essa aumentata, anche se in misura minore (sovrapp. figure
 	\ref{\getpicturelabel{bk/dataflow-write-1-BufferedChannel-2}} e
-	\ref{\getpicturelabel{bk/dataflow-write-2-BufferedChannel-2}}): 31 coppie defuse coperte / 48 totali.
+	\ref{\getpicturelabel{bk/dataflow-write-2-BufferedChannel-2}}): 31 coppie def-use coperte / 48 totali.
 	
 	Per realizzare questi test (sia per read che per write)
 	e permettere la simulazione di FileChannel, è stato utilizzato Mockito e le
@@ -851,19 +856,21 @@
 	in tabella \ref{\gettablelabel{ceq}{getSlidingCountTimestamps}{WindowManager}{1}{\storm}} si hanno le
 	classi d'equivalenza, in tabella \ref{\gettablelabel{bv}{getSlidingCountTimestamps}{WindowManager}{1}{\storm}} i 
 	boundary values, in tabella \ref{\gettablelabel{testc}{getSlidingCountTimestamps}{WindowManager}{1}{\storm}} i test
-	cases generati. L'approccio scelto alla generazione è stato multidimensionale. 
+	cases generati. L'approccio scelto alla generazione è stato multidimensionale.
+	La notazione $t(e_k)$ indica l'istante in ms in cui si è verificato l'evento $e_k$. 
+	Invece $t(e_k) \pm a$ indica che all'istante in cui si è verificato l'evento $e_k$ si aggiungono $a$ 
+	millisecondi.
 	\textit{NOTA: per ts(s) si intende timestamp(s)}
-	Nella tabella dei boundary
-	values, per il parametro formale "endTs", data la dipendenza da "startTs", si hanno 6 boundary values,
-	sarebbero da dividere per il numero di classi d'eq. di "startTs" (2): ovvero, per "startTs" < 0 si hanno
-	i corrispondenti "endTs" > 0, = 0, < 0. Stessa cosa per "startTs" $\ge$ 0. Questo si rifletterà sui test
-	cases: il numero di test cases derivati direttamente dalla boundary values analysis non è 2 * 6 * 2 ma  
-	2 * 3 * 2. La scelta di far dipendere la classe d'equivalenza di endTs con startTs è dettata dal fatto che,
+	Nella tabella dei boundary values, per il parametro formale "endTs", data la dipendenza da "startTs", 
+	si hanno 9 boundary values,
+	sarebbero da dividere per il numero di classi d'eq. di "startTs" (3): ovvero, per "startTs" < 0 si hanno
+	i corrispondenti "endTs" > 0, = 0, < 0. Stessa cosa per le altre due classi di "startTs". 
+	Questo si rifletterà sui test
+	cases: il numero di test cases derivati direttamente dalla boundary values analysis non è 3 * 6 * 2 ma  
+	3 * 3 * 2. La scelta di far dipendere la classe d'equivalenza di endTs con startTs è dettata dal fatto che,
 	ovviamente, trattandosi di tempi, se si richiede un tempo iniziale, deve essere "prima" di un tempo finale.
 	L'approccio multidimensionale permette inoltre di testare tutte le varie combinazioni e determinare se il
-	metodo "si accorge" dei problemi legati ai valori attuali passati. Nei test cases, la notazione $t(e_k)$ indica
-	l'istante in ms in cui si è verificato l'evento $e_k$. Invece $t(e_k) \pm a$ indica che all'istante in cui
-	si è verificato l'evento $e_k$ si aggiungono $a$ millisecondi. Per descrivere i test cases generati 
+	metodo "si accorge" dei problemi legati ai valori attuali passati. Per descrivere i test cases generati 
 	oltre a quelli derivati dalla boundary values analysis, bisogna precisare che WindowManager inserisce gli eventi
 	in una struttura dati: verificandosi gli eventi in maniera temporale eventi successivi dovranno avere 
 	necessariamente timestamp maggiore rispetto agli eventi precedenti. Il metodo testato, prevede due parametri in 
@@ -882,7 +889,7 @@
 	dell'evento $i$-esimo $\forall i$, nello stesso ordine presentato nell'esito atteso, 
 	\textit{"Ritorno lista di timestamp vuota"} è autoesplicativa.
 	Nella motivazione non è scritto, ma bisogna ricordarsi che nella documentazione del metodo è riportato il
-	fatto che l'intervallo è $(\text{startTs},\text{endTs}]$, ovvero, se in startTs passo il valore $t(e_1)$, allora
+	fatto che l'intervallo è $(\text{startTs},\text{endTs}]$ (startTs esclusivo, endTs inclusivo), ovvero, se in startTs passo il valore $t(e_1)$, allora
 	il ts di $e_1$ non verrà mai inserito in lista, mentre lo potrà essere (slidingCount permettendo)
 	se passo, ad esempio, $t(e_1) - 100$ (l'inclusione/esclusione è basata sul valore del timestamp passato).
 	
@@ -892,13 +899,80 @@
 	{System.currentTimeMillis}) e che avanza ogni volta
 	di 200ms a partire dal tempo di base (ogni evento successivo è distanziato 200ms dal precedente).
 	
-	I primi 12 test (riferirsi alla tabella 
+	I primi 15 test (riferirsi alla tabella 
 	\ref{\gettablelabel{testc}{getSlidingCountTimestamps}{WindowManager}{1}{\storm}})
 	falliscono, la ragione è dovuta a una malagestione del check della validità degli argomenti attuali passati al
-	metodo (i test falliscono perchè l'eccezione sollevata è IndexOutOfBoundsException, rivelando un tentativo di
-	accesso a un array/vector/\dots errato). Comunque, nonoostante la stima della reliability è applicata su 
+	metodo (i test falliscono perchè non viene lanciata alcuna eccezione, mentre ci si aspettava 
+	IllegalArgumentException - valore ritornato inaffidabile). 
+	
+	Comunque, nonostante la stima della reliability è applicata su 
 	prof. op. con dist. unif. (per semplicità) bisogna considerare il fatto che in realtà la prob. di utilizzare
 	queste configurazioni di input è notevolmente più bassa di quanto stimato.
+	
+	Il test numero 16 fallisce perchè ci si aspettava il ritorno di una lista con il timestamp del primo evento 
+	(dato che endTs è inclusivo e slidingCount=1), mentre si è ottenuta una lista vuota.
+	
+	\textbf{Per il metodo getEventCount}: in tabella 
+	\ref{\gettablelabel{ceq}{getEventCount}{WindowManager}{1}{\storm}}, 
+	\ref{\gettablelabel{bv}{getEventCount}{WindowManager}{1}{\storm}} e 
+	\ref{\gettablelabel{testc}{getEventCount}{WindowManager}{1}{\storm}} si hanno rispettivamente la
+	classe d'equivalenza, boundary values e test cases. Il metodo è decisamente più semplice e il suo unico scopo
+	è contare il numero di eventi $e_k$ che rientrano nel range $0 \le t(e_k) \le \text{referenceTime}$.
+	La notazione e la logica di gestione della finestra è identica a quanto descritto per il metodo precedente.
+	I test case elaborati, sono stati generati pensando di far scorrere il 
+	referenceTime fuori dalla finestra ("a sinistra"), nel mezzo e poi fuori ("a destra").
+	
+	L'unico test fallito è il primo e riguarda la gestione dei parametri errata 
+	(IllegalArgumentException era attesa, nessuna eccezione lanciata).
+	
+	In figura \ref{\getpicturelabel{storm/controlflow-WindowManager-1}}, 
+	\ref{\getpicturelabel{storm/controlflow-getSlidingCountTimestamps-WindowManager-1}} e
+	\ref{\getpicturelabel{storm/controlflow-getEventCount-WindowManager-1}} 
+	è presente (rispettivamente) la stmt. e branch coverage
+	per l'intera classe (34\%,34\%), il metodo getSlidingCountTimestamps (100\%,100\%) e getEventCount 
+	(100\%, 100\%). In figura 
+	\ref{\getpicturelabel{storm/mutation-WindowManager-1}}, 
+	\ref{\getpicturelabel{storm/mutation-getSlidingCountTimestamps-WindowManager-1}} e 
+	\ref{\getpicturelabel{storm/mutation-getEventCount-WindowManager-1}} sono presenti (rispettivamente)
+	informazioni sulla
+	mutazione per l'intera classe (lncov: 38\%, mutcov: 23\%, ts: 64\%), 
+	il metodo getSlidingCountTimestamps (8 mut. killed su 10 totali), 
+	il metodo getEventCount (4 mut. killed su 4).
+	In figura 
+	\ref{\getpicturelabel{storm/dataflow-getSlidingCountTimestamps-WindowManager-1}} e 
+	\ref{\getpicturelabel{storm/dataflow-getEventCount-WindowManager-1}} sono presenti (rispettivamente) la 
+	dataflow coverage dei metodi getSlidingCountTimestamps (29 coppie def-use coperte su 29 totali) 
+	e getEventCount (11 coppie def-use coperte su 11 totali)
+	
+	
+	\subsubsection{Seconda iterazione}
+	
+	Dato che sia i criteri di adeguatezza, che il mutation score dei metodi testati è praticamente quasi massima,
+	si decide di non progettare ulteriori test case per questi metodi (anche perchè quelli progettati sono
+	comunque sufficienti a rappresentare i casi di utilizzo).
+	
+	Vogliamo testare il metodo 
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/WindowManager.html#getEarliestEventTs(long,long)}
+	{getEarliestEventTs} e verificare che cosa succede se si aggiungono ulteriori eventi (tramite uno degli
+	overload del metodo 
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/WindowManager.html#add(T)}
+	{add}) e si ha una certa 
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/EvictionPolicy.html}
+	{EvictionPolicy} e 
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/TriggerPolicy.html}
+	{TriggerPolicy}, che svolgono un ruolo fondamentale nel determinare quando gli eventi scadono e quindi vanno
+	"buttati fuori" dalla finestra, e quando va richiamata l'attenzione dell'utilizzatore al verificarsi di
+	un certo evento in base alla TriggerPolicy scelta.
+	
+	Il risultato atteso di questa seconda iterazione, in termini di adequacy criteria, 
+	è l'incremento di stmt. e branch coverage dell'intera classe.
+	
+	\textbf{Per il metodo getEarliestEventTs}: in tabella 
+	\ref{\gettablelabel{ceq}{getEarliestEventTs}{WindowManager}{2}{\storm}},
+	\ref{\gettablelabel{bv}{getEarliestEventTs}{WindowManager}{2}{\storm}} e
+	\ref{\gettablelabel{testc}{getEarliestEventTs}{WindowManager}{2}{\storm}}
+	
+	In tabella \ref{\getreltablelabel{WindowManager}{\storm}} è presente la reliability.
 	
 	\newpage
 	\section{Link ai repository}
@@ -1298,7 +1372,9 @@
 			che sia null}} &
 			\tcell{Array$<$Node$>$[\\\;\;null\\]}
 		\newtrow
-	}	
+	}
+	
+	\pagebreak
 	
 	\testctable{pseudoSortByDistance}{NetworkTopologyImpl}{2}{\bookkeeper}{
 			\tcell{getNode("/europe/it/lazio\\/roma/rack-1/bookie-1"),\\
@@ -1947,13 +2023,16 @@
 	
 	\ceqtable{getSlidingCountTimestamps}{WindowManager}{1}{\storm}{
 			\tcell{startTs} &
-			\tcell{\ceq{$< 0$}\\\ceq{$\ge 0$}}
+			\tcell{
+				\ceq{$< 0$}\\
+				\ceq{timestamp $\ge 0$ di evento che non è incluso nella finestra\\ di eventi attuale}\\
+				\ceq{timestamp $\ge 0$ di evento che è incluso nella finestra\\ di eventi attuale}}
 		\newtrow
 			\tcell{endTs} &
 			\tcell{\ceq{=startTs}\\\ceq{>startTs}\\\ceq{<startTs}} 
 		\newtrow
 			\tcell{slidingCount} &
-			\tcell{\ceq{$< 0$}\\\ceq{$\ge 1$}}
+			\tcell{\ceq{$\le 0$}\\\ceq{$\ge 1$}}
 		\newtrow
 	}
 	
@@ -1963,8 +2042,12 @@
 			\tcell{$-1$}
 		\newtrow
 			\tcell{startTs} &
-			\tcell{\ceq{$\ge 0$}} &
+			\tcell{\ceq{timestamp $\ge 0$ di evento che non è incluso nella finestra\\ di eventi attuale}} &
 			\tcell{$0$}
+		\newtrow
+			\tcell{startTs} &
+			\tcell{\ceq{timestamp $\ge 0$ di evento che è incluso nella finestra\\ di eventi attuale}} &
+			\tcell{$t(e_1)$}
 		\newtrow
 			\tcell{endTs} &
 			\tcell{\ceq{=startTs}} &
@@ -1975,12 +2058,20 @@
 			\tcell{$0$}
 		\newtrow
 			\tcell{endTs} &
+			\tcell{\ceq{=startTs}} &
+			\tcell{$t(e_1)$}
+		\newtrow
+			\tcell{endTs} &
 			\tcell{\ceq{>startTs}} &
 			\tcell{$0$}
 		\newtrow
 			\tcell{endTs} &
 			\tcell{\ceq{>startTs}} &
 			\tcell{$1$}
+		\newtrow
+			\tcell{endTs} &
+			\tcell{\ceq{>startTs}} &
+			\tcell{$t(e_1)+1$}
 		\newtrow
 			\tcell{endTs} &
 			\tcell{\ceq{<startTs}} &
@@ -1990,9 +2081,13 @@
 			\tcell{\ceq{<startTs}} &
 			\tcell{$-1$}
 		\newtrow
+			\tcell{endTs} &
+			\tcell{\ceq{<startTs}} &
+			\tcell{$t(e_1)-1$}
+		\newtrow
 			\tcell{slidingCount} &
-			\tcell{\ceq{$< 0$}} &
-			\tcell{$-1$}
+			\tcell{\ceq{$\le 0$}} &
+			\tcell{$0$}
 		\newtrow
 			\tcell{slidingCount} &
 			\tcell{\ceq{$\ge 1$}} &
@@ -2001,45 +2096,45 @@
 	}
 	
 	\testctable{getSlidingCountTimestamps}{WindowManager}{1}{\storm}{
-			\tcell{-1,-1,-1} &
+			\tcell{-1,-1,0} &
 			\tcell{IllegalArgumentException viene lanciata} &
-			\tcell{startMs, endMs e slidingCount < 0}
+			\tcell{startTs, endTs e slidingCount $\le$ 0}
 		\newtrow
-			\tcell{-1,0,-1} &
+			\tcell{-1,0,0} &
 			\tcell{IllegalArgumentException viene lanciata} &
-			\tcell{startMs e slidingCount < 0}
+			\tcell{startTs e slidingCount $\le$ 0}
 		\newtrow
-			\tcell{-1,-2,-1} &
+			\tcell{-1,-2,0} &
 			\tcell{IllegalArgumentException viene lanciata} &
-			\tcell{startMs, endMs e slidingCount < 0,\\ endMs < startMs}
+			\tcell{startTs, endTs e slidingCount $\le$ 0,\\ endTs < startTs}
 		\newtrow
 			\tcell{-1,-1,1} &
 			\tcell{IllegalArgumentException viene lanciata} &
-			\tcell{startMs e endMs < 0}
+			\tcell{startTs e endTs < 0}
 		\newtrow
 			\tcell{-1,0,1} &
 			\tcell{IllegalArgumentException viene lanciata} &
-			\tcell{startMs < 0}
+			\tcell{startTs < 0}
 		\newtrow
 			\tcell{-1,-2,1} &
 			\tcell{IllegalArgumentException viene lanciata} &
-			\tcell{startMs e endMs < 0,\\ endMs < startMs}
+			\tcell{startTs e endTs < 0,\\ endTs < startTs}
 		\newtrow
-			\tcell{0,0,-1} &
+			\tcell{0,0,0} &
 			\tcell{IllegalArgumentException viene lanciata} &
-			\tcell{slidingCount < 0}
+			\tcell{slidingCount $\le$ 0}
 		\newtrow
-			\tcell{0,1,-1} &
+			\tcell{0,1,0} &
 			\tcell{IllegalArgumentException viene lanciata} &
-			\tcell{slidingCount < 0}
+			\tcell{slidingCount $\le$ 0}
 		\newtrow
-			\tcell{0,-1,-1} &
+			\tcell{0,-1,0} &
 			\tcell{IllegalArgumentException viene lanciata} &
-			\tcell{endMs e slidingCount < 0,\\ endMs < startMs}
+			\tcell{endTs e slidingCount $\le$ 0,\\ endTs < startTs}
 		\newtrow
 			\tcell{0,0,1} &
 			\tcell{Ritorno lista di timestamp vuota} &
-			\tcell{endMs = startMs}
+			\tcell{endTs = startTs}
 		\newtrow
 			\tcell{0,1,1} &
 			\tcell{Ritorno lista di timestamp vuota} &
@@ -2047,7 +2142,31 @@
 		\newtrow
 			\tcell{0,-1,1} &
 			\tcell{IllegalArgumentException viene lanciata} &
-			\tcell{endMs < 0,\\ endMs < startMs}
+			\tcell{endTs < 0,\\ endTs < startTs}
+		\newtrow
+			\tcell{$t(e_1)$, $t(e_1)$, $0$} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{slidingCount $\le$ 0}
+		\newtrow
+			\tcell{$t(e_1)$, $t(e_1)+1$, $0$} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{slidingCount $\le$ 0}
+		\newtrow
+			\tcell{$t(e_1)$, $t(e_1)-1$, $0$} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{slidingCount $\le$ 0}
+		\newtrow
+			\tcell{$t(e_1)$, $t(e_1)$, $1$} &
+			\tcell{Ritorno lista di timestamp: $\{e_1\}$} &
+			\tcell{L'evento $e_1$ ricade\\nel range di timestamp}
+		\newtrow
+			\tcell{$t(e_1)$, $t(e_1)+1$, $1$} &
+			\tcell{Ritorno lista di timestamp: $\{e_1\}$} &
+			\tcell{L'evento $e_1$ ricade\\nel range di timestamp}
+		\newtrow
+			\tcell{$t(e_1)$, $t(e_1)-1$, $1$} &
+			\tcell{Ritorno lista di timestamp vuota} &
+			\tcell{Nessun evento ricade\\ nel range di timestamp}
 		\newtrow
 			\tcell{$t(e_1)-100$, $t(e_1)-50$, 1} &
 			\tcell{Ritorno lista di timestamp vuota} &
@@ -2103,11 +2222,12 @@
 		\newtrow
 	}
 	
-	\newpage
-	
 	\ceqtable{getEventCount}{WindowManager}{1}{\storm}{
 			\tcell{referenceTime} & 
-			\tcell{\ceq{$< 0$}\\\ceq{$\ge 0$}}
+			\tcell{
+				\ceq{$< 0$}\\
+				\ceq{timestamp $\ge 0$ di evento che non è incluso nella finestra\\ di eventi attuale}\\
+				\ceq{timestamp $\ge 0$ di evento che è incluso nella finestra\\ di eventi attuale}}
 		\newtrow
 	}
 	
@@ -2117,27 +2237,31 @@
 			\tcell{$-1$}
 		\newtrow
 			\tcell{referenceTime} &
-			\tcell{\ceq{$\ge 0$}} &
+			\tcell{\ceq{timestamp $\ge 0$ di evento che non è incluso nella finestra\\ di eventi attuale}} &
 			\tcell{$0$}
+		\newtrow
+			\tcell{referenceTime} &
+			\tcell{\ceq{timestamp $\ge 0$ di evento che è incluso nella finestra\\ di eventi attuale}} &
+			\tcell{$t(e_1)$}
 		\newtrow
 	}
 	
 	\testctable{getEventCount}{WindowManager}{1}{\storm}{
 			\tcell{$-1$} &
-			\tcell{IndexOutOfBoundsException viene lanciata} &
-			\tcell{Non essendo specificato,\\ il comportamento si suppone essere\\ simile al metodo precedente}
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{referenceTime < 0}
 		\newtrow
 			\tcell{$0$} &
-			\tcell{IndexOutOfBoundsException viene lanciata} &
-			\tcell{Non essendo specificato,\\ il comportamento si suppone essere\\ simile al metodo precedente}
-		\newtrow
-			\tcell{$t(e_1)-100$} &
 			\tcell{Ritorno valore 0} &
-			\tcell{Nessun timestamp di evento\\ rientra ($t(e_1)$ è il minimo)}
+			\tcell{Nessun evento rientra}
 		\newtrow
 			\tcell{$t(e_1)$} &
 			\tcell{Ritorno valore 1} &
 			\tcell{Solo il timestamp $t(e_1)$ rientra}
+		\newtrow
+			\tcell{$t(e_1)-100$} &
+			\tcell{Ritorno valore 0} &
+			\tcell{Nessun timestamp di evento\\ rientra ($t(e_1)$ è il minimo)}
 		\newtrow
 			\tcell{$t(e_5)$} &
 			\tcell{Ritorno valore 5} &
@@ -2153,6 +2277,173 @@
 		\newtrow
 	}
 	
-	\newpage
+	\makepicture{17.5cm}{1.25cm}{storm/controlflow-WindowManager-1}
+				{\classcfcovcaption{WindowManager}{1}{\storm}}
+				
+	\makepicture{17cm}{0.75cm}{storm/controlflow-getSlidingCountTimestamps-WindowManager-1}
+				{\methodcfcovcaption{getSlidingCountTimestamps}{WindowManager}{1}{\storm}}
+				
+	\makepicture{17cm}{0.75cm}{storm/controlflow-getEventCount-WindowManager-1}
+				{\methodcfcovcaption{getEventCount}{WindowManager}{1}{\storm}}
+				
+	\makepicture{17cm}{1.5cm}{storm/mutation-WindowManager-1}
+				{\mutclasscaption{WindowManager}{1}{\storm}}
+				
+	\makepicture{17cm}{7cm}{storm/mutation-getSlidingCountTimestamps-WindowManager-1}
+				{\mutmethodcaption{getSlidingCountTimestamps}{WindowManager}{1}{\storm}{8}{10}}
+	
+	\makepicture{11cm}{4cm}{storm/mutation-getEventCount-WindowManager-1}
+				{\mutmethodcaption{getEventCount}{WindowManager}{1}{\storm}{4}{4}}
+				
+	\makepicture{13cm}{15cm}{storm/dataflow-getSlidingCountTimestamps-WindowManager-1}
+				{\alldfcovcaption{getSlidingCountTimestamps}{WindowManager}{1}{\storm}}
+				
+	\makepicture{12cm}{6cm}{storm/dataflow-getEventCount-WindowManager-1}
+				{\alldfcovcaption{getEventCount}{WindowManager}{1}{\storm}}
+	
+	%
+	% Iter: 2, Class: WindowManager, Project: Storm
+	%
+	
+	\ceqtable{getEarliestEventTs}{WindowManager}{2}{\storm}{
+			\tcell{startTs} &
+			\tcell{\ceq{$< 0$}\\\ceq{$\ge 0$}}
+		\newtrow
+			\tcell{endTs} &
+			\tcell{\ceq{=startTs}\\\ceq{>startTs}\\\ceq{<startTs}}
+		\newtrow
+	}
+	
+	\bvtable{getEarliestEventTs}{WindowManager}{2}{\storm}{
+			\tcell{startTs} &
+			\tcell{\ceq{$< 0$}} &
+			\tcell{$-1$}
+		\newtrow
+			\tcell{startTs} &
+			\tcell{\ceq{$\ge 0$}} &
+			\tcell{$0$}
+		\newtrow
+			\tcell{endTs} &
+			\tcell{\ceq{=startTs}} &
+			\tcell{$-1$}
+		\newtrow
+			\tcell{endTs} &
+			\tcell{\ceq{=startTs}} &
+			\tcell{$0$}
+		\newtrow
+			\tcell{endTs} &
+			\tcell{\ceq{>startTs}} &
+			\tcell{$0$}
+		\newtrow
+			\tcell{endTs} &
+			\tcell{\ceq{>startTs}} &
+			\tcell{$1$}
+		\newtrow
+			\tcell{endTs} &
+			\tcell{\ceq{<startTs}} &
+			\tcell{$-2$}
+		\newtrow
+			\tcell{endTs} &
+			\tcell{\ceq{<startTs}} &
+			\tcell{$-1$}
+		\newtrow
+	}
+	
+	\testctable{getEarliestEventTs}{WindowManager}{2}{\storm}{
+			\tcell{$-1,-1$} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{startTs < 0 e endTs < 0}
+		\newtrow
+			\tcell{$-1,0$} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{startTs < 0}
+		\newtrow
+			\tcell{$-1,-2$} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{startTs < 0 e endTs < 0}
+		\newtrow
+			\tcell{$0,0$} &
+			\tcell{Ritorno $-1$} &
+			\tcell{Nessun evento nel range\\(valore supposto per\\ mancanza di documentazione)}
+		\newtrow
+			\tcell{$0,1$} &
+			\tcell{Ritorno $-1$} &
+			\tcell{Nessun evento nel range\\(valore supposto per\\ mancanza di documentazione)}
+		\newtrow
+			\tcell{$0,-1$} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{endTs < 0}
+		\newtrow
+			\tcell{$t(e_1)-100, t(e_2)$} &
+			\tcell{Ritorno $t(e_1)$} &
+			\tcell{}
+		\newtrow
+			\tcell{$t(e_1), t(e_1)+100$} &
+			\tcell{Ritorno $-1$} &
+			\tcell{Nessun evento nel range\\(valore supposto per\\ mancanza di documentazione)}
+		\newtrow
+			\tcell{$t(e_1), t(e_2)$} &
+			\tcell{Ritorno $t(e_2)$} &
+			\tcell{}
+		\newtrow
+			\tcell{$t(e_1), t(e_3)$} &
+			\tcell{Ritorno $t(e_2)$} &
+			\tcell{}
+		\newtrow
+			\tcell{$t(e_2), t(e_7)$} &
+			\tcell{Ritorno $t(e_3)$} &
+			\tcell{}
+		\newtrow
+			\tcell{$t(e_{10})-100, t(e_{10})+100$} &
+			\tcell{Ritorno $t(e_{10})$} &
+			\tcell{}
+		\newtrow
+			\tcell{$t(e_1)-100, t(e_{10})+100$} &
+			\tcell{Ritorno $t(e_1)$} &
+			\tcell{}
+		\newtrow
+			\tcell{$t(e_{10}), t(e_{10})+100$} &
+			\tcell{Ritorno $-1$} &
+			\tcell{Nessun evento nel range\\(valore supposto per\\ mancanza di documentazione)}
+		\newtrow
+			\tcell{$t(e_1)-200, t(e_1)-100$} &
+			\tcell{Ritorno $-1$} &
+			\tcell{Nessun evento nel range\\(valore supposto per\\ mancanza di documentazione)}
+		\newtrow
+			\tcell{$t(e_{10})+100, t(e_{10})+200$} &
+			\tcell{Ritorno $-1$} &
+			\tcell{Nessun evento nel range\\(valore supposto per\\ mancanza di documentazione)}
+		\newtrow
+	}
+	
+	\reltable{WindowManager}{\storm}{
+			\tcell{getSlidingCount\\Timestamps} &
+			\tcell{$30$} &
+			\tcell{$14$} &
+			\tcell{$16$} & 
+			\tcell{
+				tabella $\ref{\gettablelabel{testc}{getSlidingCountTimestamps}{WindowManager}{1}{\storm}}$} &
+			\tcell{\unifdist{0.033}} &
+			\tcell{$0.472$}
+		\newtrow	
+			\tcell{getEventCount} &
+			\tcell{$7$} &
+			\tcell{$6$} &
+			\tcell{$1$} &
+			\tcell{
+				tabella $\ref{\gettablelabel{testc}{getEventCount}{WindowManager}{1}{\storm}}$} &
+			\tcell{\unifdist{0.143}} &
+			\tcell{$0.857$}
+		\newtrow
+			\tcell{getEarliest\\EventTs} &
+			\tcell{$16$} &
+			\tcell{$6$} &
+			\tcell{$10$} &
+			\tcell{
+				tabella $\ref{\gettablelabel{testc}{getEarliestEventTs}{WindowManager}{2}{\storm}}$} &
+			\tcell{\unifdist{0.062}} &
+			\tcell{$0.38$}
+		\newtrow
+	}
 	
 \end{document}
