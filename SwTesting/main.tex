@@ -850,16 +850,19 @@
 	{getEventCount}.
 	
 	Prima di testare i metodi indicati, vengono inseriti una serie di eventi in WindowManager.
-	La eviction policy e la trigger policy al momento non sono di interesse.
 	
 	\textbf{Per il metodo getSlidingCountTimestamp}: 
 	in tabella \ref{\gettablelabel{ceq}{getSlidingCountTimestamps}{WindowManager}{1}{\storm}} si hanno le
 	classi d'equivalenza, in tabella \ref{\gettablelabel{bv}{getSlidingCountTimestamps}{WindowManager}{1}{\storm}} i 
 	boundary values, in tabella \ref{\gettablelabel{testc}{getSlidingCountTimestamps}{WindowManager}{1}{\storm}} i test
-	cases generati. L'approccio scelto alla generazione è stato multidimensionale.
-	La notazione $t(e_k)$ indica l'istante in ms in cui si è verificato l'evento $e_k$. 
-	Invece $t(e_k) \pm a$ indica che all'istante in cui si è verificato l'evento $e_k$ si aggiungono $a$ 
+	cases generati. 
+	
+	L'approccio scelto alla generazione è stato multidimensionale.
+	
+	La notazione $t(e_k)$ indica l'istante in ms in cui si è verificato l'evento $e_k$, 
+	invece $t(e_k) \pm a$ indica che all'istante in cui si è verificato l'evento $e_k$ si aggiungono $a$ 
 	millisecondi.
+	
 	\textit{NOTA: per ts(s) si intende timestamp(s)}
 	Nella tabella dei boundary values, per il parametro formale "endTs", data la dipendenza da "startTs", 
 	si hanno 9 boundary values,
@@ -869,17 +872,30 @@
 	cases: il numero di test cases derivati direttamente dalla boundary values analysis non è 3 * 6 * 2 ma  
 	3 * 3 * 2. La scelta di far dipendere la classe d'equivalenza di endTs con startTs è dettata dal fatto che,
 	ovviamente, trattandosi di tempi, se si richiede un tempo iniziale, deve essere "prima" di un tempo finale.
+	
 	L'approccio multidimensionale permette inoltre di testare tutte le varie combinazioni e determinare se il
 	metodo "si accorge" dei problemi legati ai valori attuali passati. Per descrivere i test cases generati 
 	oltre a quelli derivati dalla boundary values analysis, bisogna precisare che WindowManager inserisce gli eventi
-	in una struttura dati: verificandosi gli eventi in maniera temporale eventi successivi dovranno avere 
+	in una certa struttura dati: verificandosi gli eventi in maniera temporale, eventi successivi dovranno avere 
 	necessariamente timestamp maggiore rispetto agli eventi precedenti. Il metodo testato, prevede due parametri in 
-	particolare che sono startTs e endTs: i test sono stati generati facendo "scorrere" startTs e endTs: sugli eventi 
-	verrificatosi: entrambi prima del ts del primo evento (con ts minore di tutti gli altri), con startTs prima del 
-	primo evento e endTs dopo il ts del primo evento ma prima del ts dell'ultimo, startTs e endTs entrambi dopo il ts 
-	del primo evento e prima dell'ultimo, e cosi via, fino a far arrivare sia startTs che endTs dopo il ts 
-	dell'ultimo (con ts maggiore di tutti gli altri). 
-	Il parametro slidingCount è meno documentato, ma serve a effetuare una selezione di timestamp da usare. 
+	particolare che sono startTs e endTs: 
+	i test sono stati generati facendo "scorrere" startTs e endTs: sugli eventi 
+	verrificatosi: entrambi prima del ts del primo evento (con ts minore di tutti gli altri), 
+	con startTs prima del primo evento e endTs dopo il ts del primo evento ma prima del ts dell'ultimo, startTs e 
+	endTs entrambi dopo il ts del primo evento e prima dell'ultimo, e cosi via, fino a far arrivare sia startTs che 
+	endTs dopo il ts dell'ultimo (con ts maggiore di tutti gli altri). La scelta di generare ulteriori test secondo
+	questo criterio è dettata dal fatto che testare tutte le "possibili combinazioni" è dispendioso e inutile,
+	quindi si prendono come riferimento le varie possibilità che "racchiudono" le altre della stessa categoria.
+	
+	La classe d'eq.: \textit{"timestamp $\ge 0$ che non è nel range\\ di ts min/max della finestra attuale"}
+	è rappresentabile come $\{0,1,2,\dots,t(e_1)-1\}\;\cup\;\{t(e_{10})+1,\dots,+\infty\}$.
+	Al contrario (complementare): 
+	\textit{"timestamp $\ge 0$ di evento che è nel range\\ di ts min/max della finestra attuale"} è
+	rappresentabile come $\{t(e_1),t(e_1)+1,\dots,t(e_2),\dots,t(e_9),\dots,t(e_{10})-1,t(e_{10})\}$. 
+	Ovviamente queste definizioni dipendono da come è riempita la finestra prima dell'esecuzione dei test case
+	(viene specificato in seguito).
+	
+	Il parametro slidingCount è meno documentato, ma serve a effetuare una selezione di timestamp da usare.
 	In particolare, se è 1 allora tutti gli eventi vengono considerati nel range di ts, se è 2 allora tutti gli
 	eventi in posizione pari (contando per $k=1,2,3,\dots,n$), se è 3, vengono considerati gli eventi di posizione
 	3,6,\dots (questo filtraggio viene effettuato DOPO il filtraggio dato dal ranging).
@@ -888,8 +904,10 @@
 	\textit{"Ritorno lista di timestamp: $\{\dots,e_i,\dots\}$"} si intende una lista che contiene il timestamp
 	dell'evento $i$-esimo $\forall i$, nello stesso ordine presentato nell'esito atteso, 
 	\textit{"Ritorno lista di timestamp vuota"} è autoesplicativa.
+	
 	Nella motivazione non è scritto, ma bisogna ricordarsi che nella documentazione del metodo è riportato il
-	fatto che l'intervallo è $(\text{startTs},\text{endTs}]$ (startTs esclusivo, endTs inclusivo), ovvero, se in startTs passo il valore $t(e_1)$, allora
+	fatto che l'intervallo è $(\text{startTs},\text{endTs}]$ 
+	(startTs esclusivo, endTs inclusivo), ovvero, se in startTs passo il valore $t(e_1)$, allora
 	il ts di $e_1$ non verrà mai inserito in lista, mentre lo potrà essere (slidingCount permettendo)
 	se passo, ad esempio, $t(e_1) - 100$ (l'inclusione/esclusione è basata sul valore del timestamp passato).
 	
@@ -906,8 +924,8 @@
 	IllegalArgumentException - valore ritornato inaffidabile). 
 	
 	Comunque, nonostante la stima della reliability è applicata su 
-	prof. op. con dist. unif. (per semplicità) bisogna considerare il fatto che in realtà la prob. di utilizzare
-	queste configurazioni di input è notevolmente più bassa di quanto stimato.
+	prof. op. con dist. unif. (per semplicità di calcolo) bisogna considerare il fatto che in realtà la prob. 
+	di utilizzare queste configurazioni di input è notevolmente più bassa di quanto stimato.
 	
 	Il test numero 16 fallisce perchè ci si aspettava il ritorno di una lista con il timestamp del primo evento 
 	(dato che endTs è inclusivo e slidingCount=1), mentre si è ottenuta una lista vuota.
@@ -917,10 +935,11 @@
 	\ref{\gettablelabel{bv}{getEventCount}{WindowManager}{1}{\storm}} e 
 	\ref{\gettablelabel{testc}{getEventCount}{WindowManager}{1}{\storm}} si hanno rispettivamente la
 	classe d'equivalenza, boundary values e test cases. Il metodo è decisamente più semplice e il suo unico scopo
-	è contare il numero di eventi $e_k$ che rientrano nel range $0 \le t(e_k) \le \text{referenceTime}$.
+	è contare il numero di eventi $e_k$ t.c. rientrano nel range $0 \le t(e_k) \le \text{referenceTime}$.
 	La notazione e la logica di gestione della finestra è identica a quanto descritto per il metodo precedente.
 	I test case elaborati, sono stati generati pensando di far scorrere il 
-	referenceTime fuori dalla finestra ("a sinistra"), nel mezzo e poi fuori ("a destra").
+	referenceTime fuori dalla finestra ("a sinistra"), nel mezzo e poi fuori ("a destra"), come per il precedente
+	metodo.
 	
 	L'unico test fallito è il primo e riguarda la gestione dei parametri errata 
 	(IllegalArgumentException era attesa, nessuna eccezione lanciata).
@@ -947,7 +966,7 @@
 	
 	\subsubsection{Seconda iterazione}
 	
-	Dato che sia i criteri di adeguatezza, che il mutation score dei metodi testati è praticamente quasi massima,
+	Dato che sia i criteri di adeguatezza, che il mutation score dei metodi testati è praticamente massima,
 	si decide di non progettare ulteriori test case per questi metodi (anche perchè quelli progettati sono
 	comunque sufficienti a rappresentare i casi di utilizzo).
 	
@@ -2025,8 +2044,8 @@
 			\tcell{startTs} &
 			\tcell{
 				\ceq{$< 0$}\\
-				\ceq{timestamp $\ge 0$ di evento che non è incluso nella finestra\\ di eventi attuale}\\
-				\ceq{timestamp $\ge 0$ di evento che è incluso nella finestra\\ di eventi attuale}}
+				\ceq{timestamp $\ge 0$ che non è nel range\\ di ts min/max della finestra attuale}\\
+				\ceq{timestamp $\ge 0$ di evento che è nel range\\ di ts min/max della finestra attuale}}
 		\newtrow
 			\tcell{endTs} &
 			\tcell{\ceq{=startTs}\\\ceq{>startTs}\\\ceq{<startTs}} 
@@ -2042,11 +2061,11 @@
 			\tcell{$-1$}
 		\newtrow
 			\tcell{startTs} &
-			\tcell{\ceq{timestamp $\ge 0$ di evento che non è incluso nella finestra\\ di eventi attuale}} &
+			\tcell{\ceq{timestamp $\ge 0$ che non è nel range\\ di ts min/max della finestra attuale}} &
 			\tcell{$0$}
 		\newtrow
 			\tcell{startTs} &
-			\tcell{\ceq{timestamp $\ge 0$ di evento che è incluso nella finestra\\ di eventi attuale}} &
+			\tcell{\ceq{timestamp $\ge 0$ di evento che è nel range\\ di ts min/max della finestra attuale}} &
 			\tcell{$t(e_1)$}
 		\newtrow
 			\tcell{endTs} &
@@ -2226,8 +2245,8 @@
 			\tcell{referenceTime} & 
 			\tcell{
 				\ceq{$< 0$}\\
-				\ceq{timestamp $\ge 0$ di evento che non è incluso nella finestra\\ di eventi attuale}\\
-				\ceq{timestamp $\ge 0$ di evento che è incluso nella finestra\\ di eventi attuale}}
+				\ceq{timestamp $\ge 0$ che non è nel range\\ di ts min/max della finestra attuale}\\
+				\ceq{timestamp $\ge 0$ di evento che è nel range\\ di ts min/max della finestra attuale}}
 		\newtrow
 	}
 	
@@ -2237,11 +2256,11 @@
 			\tcell{$-1$}
 		\newtrow
 			\tcell{referenceTime} &
-			\tcell{\ceq{timestamp $\ge 0$ di evento che non è incluso nella finestra\\ di eventi attuale}} &
+			\tcell{\ceq{timestamp $\ge 0$ che non è nel range\\ di ts min/max della finestra attuale}} &
 			\tcell{$0$}
 		\newtrow
 			\tcell{referenceTime} &
-			\tcell{\ceq{timestamp $\ge 0$ di evento che è incluso nella finestra\\ di eventi attuale}} &
+			\tcell{\ceq{timestamp $\ge 0$ di evento che è nel range\\ di ts min/max della finestra attuale}} &
 			\tcell{$t(e_1)$}
 		\newtrow
 	}
