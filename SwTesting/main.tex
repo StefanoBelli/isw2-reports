@@ -887,13 +887,13 @@
 	questo criterio è dettata dal fatto che testare tutte le "possibili combinazioni" è dispendioso e inutile,
 	quindi si prendono come riferimento le varie possibilità che "racchiudono" le altre della stessa categoria.
 	
-	La classe d'eq.: \textit{"timestamp $\ge 0$ che non è nel range\\ di ts min/max della finestra attuale"}
+	La classe d'eq.: \ceq{timestamp $\ge 0$ che non è nel range di ts min/max della finestra attuale}
 	è rappresentabile come $\{0,1,2,\dots,t(e_1)-1\}\;\cup\;\{t(e_{10})+1,\dots,+\infty\}$.
 	Al contrario (complementare): 
-	\textit{"timestamp $\ge 0$ di evento che è nel range\\ di ts min/max della finestra attuale"} è
+	\ceq{timestamp $\ge 0$ di evento che è nel range di ts min/max della finestra attuale} è
 	rappresentabile come $\{t(e_1),t(e_1)+1,\dots,t(e_2),\dots,t(e_9),\dots,t(e_{10})-1,t(e_{10})\}$. 
 	Ovviamente queste definizioni dipendono da come è riempita la finestra prima dell'esecuzione dei test case
-	(viene specificato in seguito).
+	(viene specificato in seguito). La classe d'eq. \ceq{$< 0$}: indica tutti i valori di timestamp non validi.
 	
 	Il parametro slidingCount è meno documentato, ma serve a effetuare una selezione di timestamp da usare.
 	In particolare, se è 1 allora tutti gli eventi vengono considerati nel range di ts, se è 2 allora tutti gli
@@ -917,24 +917,24 @@
 	{System.currentTimeMillis}) e che avanza ogni volta
 	di 200ms a partire dal tempo di base (ogni evento successivo è distanziato 200ms dal precedente).
 	
-	I primi 15 test (riferirsi alla tabella 
+	I primi 9 test, e poi i test dal 12 al 15 (riferirsi alla tabella 
 	\ref{\gettablelabel{testc}{getSlidingCountTimestamps}{WindowManager}{1}{\storm}})
 	falliscono, la ragione è dovuta a una malagestione del check della validità degli argomenti attuali passati al
 	metodo (i test falliscono perchè non viene lanciata alcuna eccezione, mentre ci si aspettava 
-	IllegalArgumentException - valore ritornato inaffidabile). 
+	IllegalArgumentException - valore ritornato inaffidabile).  Il test numero 16 fallisce perchè, dato che l'
+	argomento endTs è inclusivo e slidingCount = 1 allora, ci si aspettava una lista composta da argomento singolo.
 	
 	Comunque, nonostante la stima della reliability è applicata su 
 	prof. op. con dist. unif. (per semplicità di calcolo) bisogna considerare il fatto che in realtà la prob. 
 	di utilizzare queste configurazioni di input è notevolmente più bassa di quanto stimato.
 	
-	Il test numero 16 fallisce perchè ci si aspettava il ritorno di una lista con il timestamp del primo evento 
-	(dato che endTs è inclusivo e slidingCount=1), mentre si è ottenuta una lista vuota.
-	
 	\textbf{Per il metodo getEventCount}: in tabella 
 	\ref{\gettablelabel{ceq}{getEventCount}{WindowManager}{1}{\storm}}, 
 	\ref{\gettablelabel{bv}{getEventCount}{WindowManager}{1}{\storm}} e 
 	\ref{\gettablelabel{testc}{getEventCount}{WindowManager}{1}{\storm}} si hanno rispettivamente la
-	classe d'equivalenza, boundary values e test cases. Il metodo è decisamente più semplice e il suo unico scopo
+	classe d'equivalenza, boundary values 
+	(che essendo uguali per i test del metodo precedente, non hanno bisogno di ulteriori precisazioni rispetto a 
+	quanto scritto per il metodo precedente) e test cases.Il metodo è decisamente più semplice e il suo unico scopo
 	è contare il numero di eventi $e_k$ t.c. rientrano nel range $0 \le t(e_k) \le \text{referenceTime}$.
 	La notazione e la logica di gestione della finestra è identica a quanto descritto per il metodo precedente.
 	I test case elaborati, sono stati generati pensando di far scorrere il 
@@ -972,14 +972,17 @@
 	
 	Vogliamo testare il metodo 
 	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/WindowManager.html#getEarliestEventTs(long,long)}
-	{getEarliestEventTs} e verificare che cosa succede se si aggiungono ulteriori eventi (tramite uno degli
+	{getEarliestEventTs}.
+	Dai report di adeguatezza inoltre, si evince come non è stata mai affrontata la situazione: 
+	"che cosa succede se si aggiungono ulteriori eventi (tramite uno degli
 	overload del metodo 
 	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/WindowManager.html#add(T)}
 	{add}) e si ha una certa 
 	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/EvictionPolicy.html}
 	{EvictionPolicy} e 
 	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/TriggerPolicy.html}
-	{TriggerPolicy}, che svolgono un ruolo fondamentale nel determinare quando gli eventi scadono e quindi vanno
+	{TriggerPolicy}?". Queste ultime due policies 
+	svolgono un ruolo fondamentale nel determinare quando gli eventi scadono e quindi vanno
 	"buttati fuori" dalla finestra, e quando va richiamata l'attenzione dell'utilizzatore al verificarsi di
 	un certo evento in base alla TriggerPolicy scelta.
 	
@@ -2326,7 +2329,10 @@
 	
 	\ceqtable{getEarliestEventTs}{WindowManager}{2}{\storm}{
 			\tcell{startTs} &
-			\tcell{\ceq{$< 0$}\\\ceq{$\ge 0$}}
+			\tcell{
+				\ceq{$< 0$}\\
+				\ceq{timestamp $\ge 0$ che non è nel range\\ di ts min/max della finestra attuale}\\
+				\ceq{timestamp $\ge 0$ di evento che è nel range\\ di ts min/max della finestra attuale}}
 		\newtrow
 			\tcell{endTs} &
 			\tcell{\ceq{=startTs}\\\ceq{>startTs}\\\ceq{<startTs}}
@@ -2339,8 +2345,12 @@
 			\tcell{$-1$}
 		\newtrow
 			\tcell{startTs} &
-			\tcell{\ceq{$\ge 0$}} &
+			\tcell{\ceq{timestamp $\ge 0$ che non è nel range\\ di ts min/max della finestra attuale}} &
 			\tcell{$0$}
+		\newtrow
+			\tcell{startTs} &
+			\tcell{\ceq{timestamp $\ge 0$ di evento che è nel range\\ di ts min/max della finestra attuale}} &
+			\tcell{$t(e_1)$}
 		\newtrow
 			\tcell{endTs} &
 			\tcell{\ceq{=startTs}} &
@@ -2349,6 +2359,10 @@
 			\tcell{endTs} &
 			\tcell{\ceq{=startTs}} &
 			\tcell{$0$}
+		\newtrow
+			\tcell{endTs} &
+			\tcell{\ceq{=startTs}} &
+			\tcell{$t(e_1)$}
 		\newtrow
 			\tcell{endTs} &
 			\tcell{\ceq{>startTs}} &
@@ -2359,12 +2373,20 @@
 			\tcell{$1$}
 		\newtrow
 			\tcell{endTs} &
+			\tcell{\ceq{>startTs}} &
+			\tcell{$t(e_1)+1$}
+		\newtrow
+			\tcell{endTs} &
 			\tcell{\ceq{<startTs}} &
 			\tcell{$-2$}
 		\newtrow
 			\tcell{endTs} &
 			\tcell{\ceq{<startTs}} &
 			\tcell{$-1$}
+		\newtrow
+			\tcell{endTs} &
+			\tcell{\ceq{<startTs}} &
+			\tcell{$t(e_1)-1$}
 		\newtrow
 	}
 	
@@ -2392,6 +2414,18 @@
 			\tcell{$0,-1$} &
 			\tcell{IllegalArgumentException viene lanciata} &
 			\tcell{endTs < 0}
+		\newtrow
+			\tcell{$t(e_1),t(e_1)$} &
+			\tcell{Ritorno $t(e_1)$} &
+			\tcell{}
+		\newtrow
+			\tcell{$t(e_1),t(e_1)+1$} &
+			\tcell{Ritorno $t(e_1)$} &
+			\tcell{}
+		\newtrow
+			\tcell{$t(e_1),t(e_1)-1$} &
+			\tcell{Ritorno $-1$} &
+			\tcell{Nessun evento nel range\\(valore supposto per\\ mancanza di documentazione)}
 		\newtrow
 			\tcell{$t(e_1)-100, t(e_2)$} &
 			\tcell{Ritorno $t(e_1)$} &
@@ -2438,12 +2472,12 @@
 	\reltable{WindowManager}{\storm}{
 			\tcell{getSlidingCount\\Timestamps} &
 			\tcell{$30$} &
-			\tcell{$14$} &
-			\tcell{$16$} & 
+			\tcell{$16$} &
+			\tcell{$14$} & 
 			\tcell{
 				tabella $\ref{\gettablelabel{testc}{getSlidingCountTimestamps}{WindowManager}{1}{\storm}}$} &
 			\tcell{\unifdist{0.033}} &
-			\tcell{$0.472$}
+			\tcell{$0.538$}
 		\newtrow	
 			\tcell{getEventCount} &
 			\tcell{$7$} &
@@ -2455,13 +2489,13 @@
 			\tcell{$0.857$}
 		\newtrow
 			\tcell{getEarliest\\EventTs} &
-			\tcell{$16$} &
-			\tcell{$6$} &
-			\tcell{$10$} &
+			\tcell{$19$} &
+			\tcell{$7$} &
+			\tcell{$12$} &
 			\tcell{
 				tabella $\ref{\gettablelabel{testc}{getEarliestEventTs}{WindowManager}{2}{\storm}}$} &
-			\tcell{\unifdist{0.062}} &
-			\tcell{$0.38$}
+			\tcell{\unifdist{0.053}} &
+			\tcell{$0.36$}
 		\newtrow
 	}
 	
