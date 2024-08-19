@@ -906,7 +906,7 @@
 	\textit{"Ritorno lista di timestamp vuota"} è autoesplicativa.
 	
 	Nella motivazione non è scritto, ma bisogna ricordarsi che nella documentazione del metodo è riportato il
-	fatto che l'intervallo è $(\text{startTs},\text{endTs}]$ 
+	fatto che l'intervallo è $(\text{startTs},\;\text{endTs}]$ 
 	(startTs esclusivo, endTs inclusivo), ovvero, se in startTs passo il valore $t(e_1)$, allora
 	il ts di $e_1$ non verrà mai inserito in lista, mentre lo potrà essere (slidingCount permettendo)
 	se passo, ad esempio, $t(e_1) - 100$ (l'inclusione/esclusione è basata sul valore del timestamp passato).
@@ -934,7 +934,7 @@
 	\ref{\gettablelabel{testc}{getEventCount}{WindowManager}{1}{\storm}} si hanno rispettivamente la
 	classe d'equivalenza, boundary values 
 	(che essendo uguali per i test del metodo precedente, non hanno bisogno di ulteriori precisazioni rispetto a 
-	quanto scritto per il metodo precedente) e test cases.Il metodo è decisamente più semplice e il suo unico scopo
+	quanto scritto per il metodo precedente) e test cases. Il metodo è decisamente più semplice e il suo unico scopo
 	è contare il numero di eventi $e_k$ t.c. rientrano nel range $0 \le t(e_k) \le \text{referenceTime}$.
 	La notazione e la logica di gestione della finestra è identica a quanto descritto per il metodo precedente.
 	I test case elaborati, sono stati generati pensando di far scorrere il 
@@ -950,7 +950,7 @@
 	è presente (rispettivamente) la stmt. e branch coverage
 	per l'intera classe (34\%,34\%), il metodo getSlidingCountTimestamps (100\%,100\%) e getEventCount 
 	(100\%, 100\%). In figura 
-	\ref{\getpicturelabel{storm/mutation-WindowManager-1}}, 
+	\ref{\getpicturelabel{storm/mutation-WindowManager-1}},
 	\ref{\getpicturelabel{storm/mutation-getSlidingCountTimestamps-WindowManager-1}} e 
 	\ref{\getpicturelabel{storm/mutation-getEventCount-WindowManager-1}} sono presenti (rispettivamente)
 	informazioni sulla
@@ -992,7 +992,47 @@
 	\textbf{Per il metodo getEarliestEventTs}: in tabella 
 	\ref{\gettablelabel{ceq}{getEarliestEventTs}{WindowManager}{2}{\storm}},
 	\ref{\gettablelabel{bv}{getEarliestEventTs}{WindowManager}{2}{\storm}} e
-	\ref{\gettablelabel{testc}{getEarliestEventTs}{WindowManager}{2}{\storm}}
+	\ref{\gettablelabel{testc}{getEarliestEventTs}{WindowManager}{2}{\storm}} si trovano
+	classi d'equivalenza, boundary values 
+	(che essendo uguali per i test del metodo precedente, non hanno bisogno di ulteriori precisazioni rispetto a 
+	quanto scritto per il metodo precedente) e test cases. Il metodo ritorna un timestamp $t(e_k)$ tale che 
+	da $t(e_k)\;\in\;(\text{startTs},\;\text{endTs}]$ e che sia l'earliest. In altre parole, dato un range 
+	definito dai parametri formali startTs (esclusivo) e endTs (inclusivo), il metodo ritorna il primo timestamp
+	(il minore possibile) che appartiene a un certo evento (se ad esempio ho un range che va da 3 a 10 e ho due
+	eventi: uno al ts 5 e uno al ts 8, allora il metodo ritorna 5). Come per i primi due metodi testati, anche
+	qui la finestra viene riempita prima di eseguire i test, di 10 eventi fittizi. La generazione dei test
+	è multidimensionale. Vengono progettati altri test cases oltre a quelli relativi ai valori al bordo: 
+	startTs e endTs vengono fatti scorrere su tutti gli eventi come per i primi due metodi testati (anche perchè
+	i soli test coi valori di bordo non sono sufficienti a coprire varie casistiche di utilizzo del metodo,
+	il criterio di "scorrimento" dei parametri è utile al fine di avere una rappresentanza generale dei possibili
+	casi di utilizzo invece di generare numerosi casi di test derivati da numerose combinazioni di parametri).
+	
+	Vale la pena soffermarsi sui test falliti 
+	(rif. tabella \ref{\gettablelabel{testc}{getEarliestEventTs}{WindowManager}{2}{\storm}}): 
+	i test 1,2,3,6 falliscono perchè ci si aspettava
+	IllegalArgumentException lanciata, ma non lo è stata (valore ritornato inaffidabile, nessuna segnalazione
+	di errore - porta a bug gravi difficili da scovare). La motivazione del fallimento dei test 
+	4,5,7,8,9,11,17,18,19 è decisamente molto meno grave: sarebbe stato sufficiente avere una documentazione più
+	"comprehensive" - per questi test cases, \underline{non} c'è un earliest event: 
+	io ho supposto che il valore ritornato in tal caso fosse $-1$: in realtà la segnalazione di tale esito avviene
+	con Long.MAX\_VALUE (è molto meno grave perchè appunto, manca documentazione ma l'error reporting c'è).
+	
+	\textbf{Per il metodo add}: viene preso come riferimento per permettere il monitoraggio del comportamento
+	del WindowManager all'inserimento di eventi e all'attuazione delle policies di espulsione di eventi scaduti
+	e triggering ("richiamo dell'attenzione" dell'utilizzatore). Vengono usate le policies basate su conteggio
+	degli eventi:
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/CountEvictionPolicy.html}
+	{CountEvictionPolicy} e
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/CountTriggerPolicy.html}
+	{CountTriggerPolicy}. Il funzionamento, descritto brevemente, è il seguente: vengono inseriti eventi
+	nel gestore della finestra - i contatori della trigger e eviction policy vengono incrementati di 1 - 
+	superata la soglia del trigger, viene invocato il metodo onActivation (dall'interfaccia 
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/WindowLifecycleListener.html}
+	{WindowLifecycleListener}, la cui istanza è passata al WindowManager) nella quale sono presenti gli eventi
+	correnti nella window, i nuovi eventi e quelli scaduti (questi ultimi due, nel lasso di tempo che va dall'
+	ultima attivazione a questa attivazione). La eviction policy decide, appunto, quali eventi sono scaduti, che
+	verranno "comunicati" all'utilizzatore solo alla prossima attivazione.
+	
 	
 	In tabella \ref{\getreltablelabel{WindowManager}{\storm}} è presente la reliability.
 	
@@ -2416,12 +2456,12 @@
 			\tcell{endTs < 0}
 		\newtrow
 			\tcell{$t(e_1),t(e_1)$} &
-			\tcell{Ritorno $t(e_1)$} &
-			\tcell{}
+			\tcell{Ritorno $-1$} &
+			\tcell{Nessun evento nel range\\(valore supposto per\\ mancanza di documentazione)}
 		\newtrow
 			\tcell{$t(e_1),t(e_1)+1$} &
-			\tcell{Ritorno $t(e_1)$} &
-			\tcell{}
+			\tcell{Ritorno $-1$} &
+			\tcell{Nessun evento nel range\\(valore supposto per\\ mancanza di documentazione)}
 		\newtrow
 			\tcell{$t(e_1),t(e_1)-1$} &
 			\tcell{Ritorno $-1$} &
@@ -2490,12 +2530,12 @@
 		\newtrow
 			\tcell{getEarliest\\EventTs} &
 			\tcell{$19$} &
-			\tcell{$7$} &
-			\tcell{$12$} &
+			\tcell{$6$} &
+			\tcell{$13$} &
 			\tcell{
 				tabella $\ref{\gettablelabel{testc}{getEarliestEventTs}{WindowManager}{2}{\storm}}$} &
 			\tcell{\unifdist{0.053}} &
-			\tcell{$0.36$}
+			\tcell{$0.311$}
 		\newtrow
 	}
 	
