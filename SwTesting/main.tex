@@ -1071,8 +1071,8 @@
 	\textit{"Nessuna invocazione del lifecycle listener"} si riferisce al fatto che non vengono mai invocati i 
 	metodi onActivation e onExpiry: mai raggiunti i 10 eventi), \textit{"Invocazione di $n$ volte del lifecycle
 	listener expired: $\{\dots\}$, newEvents: $\{\dots\}$"} indica che il lifecycle listener viene invocato
-	proprio nell'add invocata dal test case e gli insiemi expired e newEvents vengono intercettati IN QUEST'ULTIMA 
-	invocazione di onActivation e onExpiry, e quindi confrontati con quanto ci si aspetta sia presente al momento.
+	proprio nell'add invocata dal test case e gli insiemi expired e newEvents vengono confrontati IN QUEST'ULTIMA 
+	invocazione di onActivation e onExpiry, con gli argomenti passatogli intercettati (ci si aspetta che siano uguali).
 	Nel passato, si sono verificate $n-1$ invocazioni di onActivation e onExpiry e quindi, in totale, 
 	sommandola a quest'ultima: $n$.
 	L'esito atteso \textit{"Invocazione di $n$ volte del lifecycle listener (nel passato)"} indica che ci sono state
