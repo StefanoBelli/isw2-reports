@@ -1019,12 +1019,16 @@
 	
 	\textbf{Per il metodo add}: viene preso come riferimento per permettere il monitoraggio del comportamento
 	del WindowManager all'inserimento di eventi e all'attuazione delle policies di espulsione di eventi scaduti
-	e triggering ("richiamo dell'attenzione" dell'utilizzatore). Vengono usate le policies basate su conteggio
+	e triggering ("richiamo dell'attenzione" dell'utilizzatore). 
+	
+	Vengono usate le policies basate su conteggio
 	degli eventi:
 	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/CountEvictionPolicy.html}
 	{CountEvictionPolicy} e
 	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/CountTriggerPolicy.html}
-	{CountTriggerPolicy}. Il funzionamento, descritto brevemente, è il seguente: vengono inseriti eventi
+	{CountTriggerPolicy}. 
+	
+	Il funzionamento, descritto brevemente, è il seguente: vengono inseriti eventi
 	nel gestore della finestra - i contatori della trigger e eviction policy vengono incrementati di 1 - 
 	superata la soglia del trigger, viene invocato il metodo onActivation (dall'interfaccia 
 	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/WindowLifecycleListener.html}
@@ -1032,9 +1036,74 @@
 	correnti nella window, i nuovi eventi e quelli scaduti (questi ultimi due, nel lasso di tempo che va dall'
 	ultima attivazione a questa attivazione). La eviction policy decide, appunto, quali eventi sono scaduti, che
 	verranno "comunicati" all'utilizzatore solo alla prossima attivazione.
+	In tabella 
+	\ref{\gettablelabel{ceq}{add}{WindowManager}{2}{\storm}}, 
+	\ref{\gettablelabel{bv}{add}{WindowManager}{2}{\storm}} e
+	\ref{\gettablelabel{testc}{add}{WindowManager}{2}{\storm}} sono presenti classi d'equivalenza, boundary values
+	e test cases identificati per il metodo add.
+	La classe d'equivalenza \textit{\ceq{qualsiasi evento di tipo T=Integer}} indica che può essere inserito
+	qualsiasi intero, non ha rilevanza, è semplicemente un dato. Mentre la classe \textit{\ceq{timestamp $\ge 0$}}
+	indica solo i timestamp "validi". Nei test cases: \textit{prng()}
+	indica l'utilizzo del PRNG di default di Java
+	(\href{https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/util/Random.html#nextInt()}
+	{java.util.Random.nextInt}), mentre \textit{sctm()} indica l'utilizzo di
+	\href{https://docs.oracle.com/javase/8/docs/api/java/lang/System.html#currentTimeMillis--}
+	{System.currentTimeMillis} (di fatto, facendo corrispondere l'utilizzo della più generica overload di 
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/WindowManager.html#add(T,long)}
+	{add(T,long)} a 
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/WindowManager.html#add(T)}{add(T)}.
+	L'aggiunta degli elementi nel gestore delle finestre è già stato testato "indirettamente" in precedenza 
+	(se l'add fosse fallita, allora non sarebbe stato possibile testare gli altri metodi). Ci si concentra,
+	in questo caso, nel test dell'unità WindowManager, in quanto, il resto dei metodi della classe si occupano
+	di gestire gli eventi della finestra in base alle policies (WindowManager implementa \href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/TriggerHandler.html}
+	{TriggerHandler}: l'istanza di WindowManager viene passata alla policy
+	che regolamenta il trigger e quindi invoca l'override di 
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/WindowManager.html#onTrigger()}
+	{onTrigger} di WindowManager): quello che deve fare WindowManager è invocare il metodo 
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/WindowLifecycleListener.html#onActivation(java.util.List,java.util.List,java.util.List,java.lang.Long)}
+	{onActivation} e \href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/WindowLifecycleListener.html#onExpiry(java.util.List)}
+	{onExpiry} di
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/WindowLifecycleListener.html}
+	{WindowLifecycleListener} per permettere a una classe implementor di una finestra (es. \href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/topology/WindowedBoltExecutor.html}
+	{WindowedBoltExecutor}) di gestire quest'ultima, processare eventi ecc ecc\dots
+	Quindi, sfruttando il metodo add per raggiungere la threshold di add per causare l'invocazione di questi
+	metodi da parte di WindowManager, si riesce a testare quanto appena descritto. L' esito atteso:
+	\textit{"Nessuna invocazione del lifecycle listener"} si riferisce al fatto che non vengono mai invocati i 
+	metodi onActivation e onExpiry: mai raggiunti i 10 eventi), \textit{"Invocazione di $n$ volte del lifecycle
+	listener expired: $\{\dots\}$, newEvents: $\{\dots\}$"} indica che il lifecycle listener viene invocato
+	proprio nell'add invocata dal test case e gli insiemi expired e newEvents vengono intercettati IN QUEST'ULTIMA 
+	invocazione di onActivation e onExpiry, e quindi confrontati con quanto ci si aspetta sia presente al momento.
+	Nel passato, si sono verificate $n-1$ invocazioni di onActivation e onExpiry e quindi, in totale, 
+	sommandola a quest'ultima: $n$.
+	L'esito atteso \textit{"Invocazione di $n$ volte del lifecycle listener (nel passato)"} indica che ci sono state
+	un tot di invocazioni precedenti a questa che hanno causato l'invocazione di onActivation e onExpiry pari a 
+	$n$ volte. L'ultima invocazione di add() (quella del test case) non ha provocato l'invocazione di onActivation e 
+	onExpiry,e quindi non si confrontano i valori di expired e newEvents. Nella colonna "Motivazione" è presente
+	il numero di volte che è stato eseguito add() (nel setup) prima di arrivare a quella del test case: se 
+	sono state eseguite 10 add + quella del test case ci si aspetta una invocazione nel passato, se sono state
+	eseguite 9 add + quella del test case ci si aspetta 1 invocazione in concomitanza con l'add del test case,
+	se sono state eseguite 15 add + quella del test case ci si aspetta 1 invocazione nel passato, se sono 19 add +
+	quella del test case ci si aspettano 2 invocazioni, con l'ultima che è in concomitanza con l'add del test
+	case\dots). 
 	
+	A livello implementativo, è stato usato Mockito per mockare WindowLifecycleListener e usato verify per 
+	verificare che venissero invocate esattamente $n$ volte onActivation e onExpiry. Con ArgumentCaptor, 
+	se l'invocazione della add era l'ultima, è stato possibile intercettare gli argomenti passati a onActivation e
+	onExpiry in modo da confrontarli con i set expired e newEvents che ci si aspettavano.
+	Il primo argomento passato ai parametrized test è il numero di add da eseguire 
+	(numero scritto in "Motivazione", colonna dei test cases) prima dell'add "finale" 
+	(quella del test case vero e proprio).
+	
+	Dalla figura \ref{\getpicturelabel{storm/controlflow-WindowManager-2}} alla 
+	\ref{\getpicturelabel{storm/dataflow-add-WindowManager-2}} 
+	si trovano le metriche di adeguatezza per la seconda iterazione. Le metriche di stmt. e
+	branch coverage sono aumentate per la classe (79\%,76\%), come previsto. 
+	E' anche aumentata la sua test 
+	strength (lncov: 82\%, mutcov: 65\%, ts: 80\%)
 	
 	In tabella \ref{\getreltablelabel{WindowManager}{\storm}} è presente la reliability.
+	
+	\subsection{org.apache.storm.bolt.JoinBolt}
 	
 	\newpage
 	\section{Link ai repository}
@@ -2509,6 +2578,109 @@
 		\newtrow
 	}
 	
+	\ceqtable{add}{WindowManager}{2}{\storm}{
+			\tcell{event} &
+			\tcell{\ceq{qualsiasi evento di tipo T=Integer}}
+		\newtrow
+			\tcell{ts} &
+			\tcell{\ceq{timestamp $\ge 0$}}
+		\newtrow
+	}
+	
+	\bvtable{add}{WindowManager}{2}{\storm}{
+			\tcell{event} &
+			\tcell{\ceq{qualsiasi evento di tipo T=Integer}} &
+			\tcell{Integer.valueOf(0)}
+		\newtrow
+			\tcell{ts} &
+			\tcell{\ceq{timestamp $\ge 0$}} &
+			\tcell{0}
+		\newtrow
+	}
+	
+	\newpage
+	
+	\testctable{add}{WindowManager}{2}{\storm}{
+			\tcell{prng(), sctm()} &
+			\tcell{Nessuna invocazione del lifecycle listener} &
+			\tcell{Add preceduta da 0 altre add}
+		\newtrow
+			\tcell{prng(), sctm()} &
+			\tcell{Nessuna invocazione del lifecycle listener} &
+			\tcell{Add preceduta da 5 altre add}
+		\newtrow
+			\tcell{prng(), sctm()} &
+			\tcell{
+					Invocazione di 1 volta del lifecycle listener\\
+					expired: $\{e_1,\dots,e_5\}$, newEvents: $\{e_6,\dots,e_{10}\}$} &
+			\tcell{Add preceduta da 9 altre add}
+		\newtrow
+			\tcell{prng(), sctm()} &
+			\tcell{
+					Invocazione di 1 volta del lifecycle listener\\
+					(nel passato)} &
+			\tcell{Add preceduta da 10 altre add}
+		\newtrow
+			\tcell{prng(), sctm()} &
+			\tcell{
+					Invocazione di 1 volta del lifecycle listener\\
+					(nel passato)} &
+			\tcell{Add preceduta da 15 altre add}
+		\newtrow
+			\tcell{prng(), sctm()} &
+			\tcell{
+					Invocazione di 2 volte del lifecycle listener\\
+					expired: $\{e_6,\dots,e_{15}\}$, newEvents: $\{e_{16},\dots,e_{20}\}$} &
+			\tcell{Add preceduta da 19 altre add}
+		\newtrow
+			\tcell{prng(), sctm()} &
+			\tcell{
+					Invocazione di 2 volte del lifecycle listener\\
+					(nel passato)} &
+			\tcell{Add preceduta da 20 altre add}
+		\newtrow
+			\tcell{prng(), sctm()} &
+			\tcell{
+					Invocazione di 2 volte del lifecycle listener\\
+					(nel passato)} &
+			\tcell{Add preceduta da 25 altre add}
+		\newtrow
+			\tcell{prng(), sctm()} &
+			\tcell{
+					Invocazione di 3 volte del lifecycle listener\\
+					expired: $\{e_{16},\dots,e_{25}\}$, newEvents: $\{e_{26},\dots,e_{30}\}$} &
+			\tcell{Add preceduta da 29 altre add}
+		\newtrow
+	}
+	
+	\makepicture{17.5cm}{0.75cm}{storm/controlflow-WindowManager-2}
+				{\classcfcovcaption{WindowManager}{2}{\storm}}
+				
+	\makepicture{17cm}{0.75cm}{storm/controlflow-getEarliestEventTs-WindowManager-2}
+				{\methodcfcovcaption{getEarliestEventTs}{WindowManager}{2}{\storm}}
+				
+	\makepicture{17cm}{0.65cm}{storm/controlflow-add-WindowManager-2}
+				{\methodcfcovcaption{add}{WindowManager}{2}{\storm}}
+				
+	\makepicture{17cm}{0.70cm}{storm/controlflow-add-realoverload-WindowManager-2}
+				{Overload: \methodcfcovcaption{add}{WindowManager}{2}{\storm}}
+				
+	\makepicture{17cm}{1.75cm}{storm/mutation-WindowManager-2}
+				{\mutclasscaption{WindowManager}{2}{\storm}}
+				
+	\makepicture{15cm}{4cm}{storm/mutation-getEarliestEventTs-WindowManager-2}
+				{\mutmethodcaption{getEarliestEventTs}{WindowManager}{2}{\storm}{5}{5}}
+	
+	\makepicture{15cm}{8cm}{storm/mutation-add-WindowManager-2}
+				{\mutmethodcaption{add}{WindowManager}{2}{\storm}{2}{3}}
+				
+	\makepicture{13cm}{8cm}{storm/dataflow-getEarliestEventTs-WindowManager-2}
+				{\alldfcovcaption{getEarliestEventTs}{WindowManager}{2}{\storm}}
+				
+	\makepicture{12cm}{6cm}{storm/dataflow-add-WindowManager-2}
+				{\alldfcovcaption{add}{WindowManager}{2}{\storm}}
+		
+	
 	\reltable{WindowManager}{\storm}{
 			\tcell{getSlidingCount\\Timestamps} &
 			\tcell{$30$} &
@@ -2536,6 +2708,15 @@
 				tabella $\ref{\gettablelabel{testc}{getEarliestEventTs}{WindowManager}{2}{\storm}}$} &
 			\tcell{\unifdist{0.053}} &
 			\tcell{$0.311$}
+		\newtrow
+			\tcell{add} &
+			\tcell{$9$} &
+			\tcell{$9$} &
+			\tcell{$0$} &
+			\tcell{
+				tabella $\ref{\gettablelabel{testc}{add}{WindowManager}{2}{\storm}}$} &
+			\tcell{\unifdist{0.11}} &
+			\tcell{$1$}
 		\newtrow
 	}
 	
