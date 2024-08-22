@@ -228,8 +228,7 @@
 	(file html/xml di JaCoCo, PIT e ba-dua compressi in un archivio zip).
 	Descrivere i sistemi testati non è coerente con lo scopo di questo documento, qualora fosse necessario ai fini 
 	di motivare le scelte e le decisioni intraprese per individuare classi d’equivalenza, boundary analysis,\dots\,
-	si riprenderanno i concetti del sistema di interesse. \textit{NOTA: nel documento, con "Estensione dei
-	casi di test del metodo \dots " spesso si intende anche il miglioramento dei test}
+	si riprenderanno i concetti del sistema di interesse.
 
 	\pagebreak
 
@@ -263,9 +262,7 @@
 	Un nodo foglia non può avere come parent il nodo ROOT, all'atto pratico questo significa che il bookie server deve essere necessariamente
 	collocato in un rack/datacenter/\dots (collegato quindi a un router che rappresenti questo rack/datacenter/\dots), inserire un nodo tipo
 	\textit{"/bookie-1"} (\underline{invalido}: essendo bookie$_1$ il server bookie/nodo foglia) non è consentito. 
-	Inserire invece \textit{"/rack-1/bookie-1"} va bene (\underline{valido}), cosi come \textit{"/datacenter-1/
-	rack-1/bookie-1"} (\underline{invalido}) e cosi via\dots Una volta stabilita l'altezza dell'albero (inserendo
-	il primo ramo), non potranno essere inserite altre foglie ad altezza diversa.
+	Inserire invece \textit{"/rack-1/bookie-1"} va bene (\underline{valido}), e cosi via\dots 
 
 	\subsubsection{Prima iterazione}
 	Si decide di testare i metodi 
@@ -392,7 +389,10 @@
 	nel cercare, ad esempio, un bookie a distanza minima che rispetti certi criteri per replicare le entries - se il metodo pseudoSortByDistance
 	funziona erroneamente si avrà un peggioramento delle prestazioni (la topologia rispecchia la distanza fisica tra i bookies - risultati errati di pseudoSortByDistance corrispondono a diminuzione del rate di trasferimento dati).
 	
-	\textbf{Estensione casi di test metodo add}: osserviamo dalla 
+	\textbf{Estensione casi di test metodo add}: 
+	una volta stabilita l'altezza dell'albero (inserendo
+	il primo ramo), non potranno essere inserite altre foglie ad altezza diversa.
+	Osserviamo inoltre dalla 
 	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/NetworkTopologyImpl.html#add(org.apache.bookkeeper.net.Node)}
 	{documentazione di add}
 	che il metodo lancia IllegalArgumentException se il nodo da inserire non è una foglia, oppure si tenta
@@ -1102,8 +1102,6 @@
 	strength (lncov: 82\%, mutcov: 65\%, ts: 80\%)
 	
 	In tabella \ref{\getreltablelabel{WindowManager}{\storm}} è presente la reliability.
-	
-	\subsection{org.apache.storm.bolt.JoinBolt}
 	
 	\newpage
 	\section{Link ai repository}
