@@ -389,13 +389,12 @@
 	nel cercare, ad esempio, un bookie a distanza minima che rispetti certi criteri per replicare le entries - se il metodo pseudoSortByDistance
 	funziona erroneamente si avrà un peggioramento delle prestazioni (la topologia rispecchia la distanza fisica tra i bookies - risultati errati di pseudoSortByDistance corrispondono a diminuzione del rate di trasferimento dati).
 	
-	\textbf{Estensione casi di test metodo add}: 
-	una volta stabilita l'altezza dell'albero (inserendo
-	il primo ramo), non potranno essere inserite altre foglie ad altezza diversa.
-	Osserviamo inoltre dalla 
+	\textbf{Estensione casi di test metodo add}: osserviamo dalla 
 	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/NetworkTopologyImpl.html#add(org.apache.bookkeeper.net.Node)}
 	{documentazione di add}
-	che il metodo lancia IllegalArgumentException se il nodo da inserire non è una foglia, oppure si tenta
+	che il metodo lancia IllegalArgumentException se il nodo da inserire non è una foglia - una volta stabilita 
+	l'altezza dell'albero (inserendo
+	il primo ramo), non potranno essere inserite altre foglie ad altezza diversa - oppure si tenta
 	di rendere una foglia esistente un parent ("appendendogli" una foglia) - per verificare che il metodo
 	in queste condizioni abbia il comportamento atteso, bisogna estendere i casi di test: add deve validare il 
 	nodo da inserire per la topologia di rete esistente - bisogna \underline{popolare la rete} prima di eseguire i test case. 
