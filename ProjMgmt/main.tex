@@ -1,15 +1,291 @@
 \documentclass{beamer}
+
+\usepackage[utf8]{inputenc}
 \usepackage[italian]{babel}
+\usepackage{graphicx}
+\usepackage[font=tiny,labelfont=bf]{caption}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=black, urlcolor=blue}
+
+\usetheme{Boadilla}
+
+\graphicspath{ {./pics} }
+
+\title[ML for SE]{Machine Learning for Software Engineering}
+\subtitle{ISW2 project a.y. 2023/2024}
+\author[Stefano Belli, 0350116]{Stefano Belli, matricola 0350116}
+\institute[uniroma2]{Università degli Studi di Roma "Tor Vergata"}
+\date{}
+
+\usefonttheme[onlymath]{serif}
+
+\newcommand{\dflvspace}{\vspace{10pt}}
+
+\renewcommand{\footnotesize}{\tiny}
+
+\setbeamertemplate{navigation symbols}{}
 
 \begin{document}
 
-  \begin{frame}{Agenda}
-    \tableofcontents
-  \end{frame}
+\begin{frame}[plain]
+    \titlepage
+\end{frame}
 
-  \section{Intro}
-  \begin{frame}
-    test
-  \end{frame}
+\begin{frame}
+    \frametitle{Agenda}
+    \tableofcontents
+\end{frame}
+
+\section{Introduzione}
+\begin{frame}
+	\frametitle{Introduzione}
+	
+	\begin{itemize}
+		\setlength\itemsep{10pt}
+	
+		\item Nei grandi progetti software, il collaudo è cruciale: avere una buona test suite aiuta a prevenire
+		malfunzionamenti spiacevoli per l'utente, permettendo il rilevamento del difetto prima della release.
+	
+		\item Tuttavia, eseguire numerosi test è dispendioso sia in termini di tempo d'esecuzione dei test sia per
+		quanto riguarda la loro progettazione e implementazione: per quali unità conviene focalizzarsi?
+		
+		\item Per aiutarci a rispondere a queste domande, possiamo usare un modello di machine learning che 
+		date informazioni sul codice sorgente, \underline{stimi} 
+		se l'unità sia "buggy" o meno
+		(e quindi, se generare dei test case per quest'ultima).
+	\end{itemize}
+\end{frame}
+
+\section{Scopo}
+\begin{frame}
+	\frametitle{Scopo}
+	
+	\begin{itemize}
+		\setlength\itemsep{10pt}
+		
+		\item Si vogliono confrontare le prestazioni di tre classificatori (Naive Bayes, IBk, Random Forest) con e
+		senza tecniche di feature selection, sampling e cost sensitivity.
+		\begin{itemize}
+			\item Prediction della buggyness di una classe Java
+		\end{itemize}
+	
+		\item Per la costruzione del dataset, e quindi la comparazione dei classificatori
+		vengono sfruttati i progetti open source Apache BookKeeper e Apache Storm.
+	\end{itemize}
+\end{frame}
+
+\section{Metodologia}
+\subsection{Recupero informazioni su release e tickets da Jira}
+\begin{frame}
+	\frametitle{Recupero informazioni su release e tickets da Jira}
+	
+	Dal bug tracker Jira, utilizzato dalla Apache Software Foundation, vengono scaricati, tramite
+	la sua REST API, informazioni riguardo alle \underline{release} e ai \underline{ticket} che siano di tipo bug,
+	il cui stato sia chiuso e il bug risolto.
+	
+	\dflvspace
+	
+	Le informazioni (in particolare le date) su questi tipi di ticket serviranno 
+	poi per determinare quali classi sono buggate, in quali release.
+	
+	\dflvspace
+
+	In Jira, nella risposta JSON, per ogni ticket, sono di particolare interesse questi campi 
+	(che ci permetteranno di capire le release affette dal bug):
+	\begin{itemize}
+		\item L'array \textit{fields.version}
+		che contiene le informazioni sulle release affette dal bug (affected versions)
+		\item La stringa \textit{fields.created} che è la data di apertura del ticket
+		\item La stringa \textit{fields.resolutiondate} che è la data di risoluzione del bug
+	\end{itemize}
+\end{frame}
+
+\subsection{Ciclo di vita del difetto}
+\begin{frame}
+	\frametitle{Ciclo di vita del difetto}
+	Al fine di determinare le versioni affette dal bug, definiamo:
+	\begin{itemize}
+		\item L' injected version (\textit{IV}) che è il numero di versione in cui è stato introdotto il bug
+		\item L' opening version (\textit{OV}) che è il numero di versione in cui è stato aperto il ticket relativo al bug
+		\item La fixed version (\textit{FV}) che è il numero di versione in cui è stato risolto il bug
+	\end{itemize}
+	Tutte e 3 le \textit{IV},\textit{OV} e \textit{FV} permettono di individuare il "ciclo di vita" completo del
+	bug, che è presente da \textit{IV} (incluso) fino a \textit{FV} (escluso).
+	\begin{alertblock}{Problema}
+	Le API di Jira, forniscono sempre riguardo alla creazione del ticket e alla sua risoluzione (permettendo di determinare, rispettivamente: opening e fixed version), ma non sempre rispetto alle affected versions, non
+	permettendo di individuare la injected version!
+	\end{alertblock}
+\end{frame}
+
+\subsection{Proportion}
+\begin{frame}
+	\frametitle{Utilizzo della tecnica proportion}
+	Se l'injected version non è nota, per un certo bug
+	possiamo sfruttare il \textbf{proportion} per stimare l'\textit{IV}:
+	
+	\dflvspace
+	
+	\begin{align*}
+	p = \frac{FV-IV}{FV-OV}\;\;\;\;\Rightarrow\;\;\;\;IV = FV - (FV - OV)\cdot p
+	\end{align*}
+	
+	\dflvspace
+	
+	\begin{exampleblock}{Applicazione}
+	A partire dai bug la cui \textit{IV} è nota, calcoliamo $p$ (prima formula). 
+	Poi, avendo appena calcolato la costante di proporzionalità $p$, per il bug di cui
+	\underline{non} si conosce \textit{IV}, si applica la seconda formula, in modo da determinarla.
+	\end{exampleblock}
+\end{frame}
+
+\subsection{Metodi di utilizzo di proportion}
+\begin{frame}
+	\frametitle{Metodi di utilizzo di proportion}
+	Viene utilizzato proportion con le tecniche:
+	\begin{itemize}
+		\item \textbf{Cold start}: se il numero di tickets utilizzabili ai fini del calcolo di $p$ è minore
+		di 5, si calcola la media di $p$ sui ticket per ognuno dei seguenti progetti Apache: 
+		Avro, OpenJPA, Syncope, Tajo e ZooKeeper. 
+		Infine si effettua la mediana su queste 5 medie, ottenendoil valore di $p$ finale.
+		\item \textbf{Incremental}: se il numero di tickets utilizzabili ai fini del calcolo di $p$ è maggiore o
+		uguale a 5: $p$ è calcolato effettuando la media delle proporzionalità $p$ di tutti i bug precedenti 
+		(che hanno \textit{IV})
+		rispetto a quello considerato attualmente, di cui bisogna stimare \textit{IV}.
+	\end{itemize}
+\end{frame}
+
+\subsection{Costruzione del dataset: metriche}
+\begin{frame}
+	\frametitle{Costruzione del dataset: metriche}
+	
+	\fontsize{9pt}{10pt}\selectfont
+	
+	% JGit, commit, releases unione info da jira e git
+	\begin{itemize}
+	
+		\item Viene usato JGit al fine di poter manipolare un 
+		repository Git direttamente tramite metodi Java: possiamo
+		collezionare informazioni su commit e quindi anche sul codice sorgente 
+		(esclusivamente classi Java) del repo di interesse.
+		
+		\item Tramite Git si possono quindi calcolare delle metriche di interesse
+		su un certo file Java che verranno poi utilizzate dal classificatore ai
+		fini della predizione
+	\end{itemize}
+	
+	\dflvspace
+	
+	Le metriche di interesse scelte sono le seguenti:
+	
+	\dflvspace
+	
+	\centering
+	\begin{tabular}{|l|l|}
+		\hline
+		\textbf{Metrica} & \textbf{Descrizione} \\
+		\hline
+		\hline 
+		LOC & Numero di linee di codice\\
+		\hline
+		LOC added & Somma di LOC aggiunte sulle revisioni\\
+		\hline
+		Avg. LOC added & Media di LOC aggiunte sulle revisioni\\
+		\hline
+		Max. LOC added & Numero massimo di LOC aggiunte tra le revisioni\\
+		\hline
+		Churn & Somma di LOC aggiunte e rimosse sulle revisioni\\
+		\hline
+		Avg. churn & Media di LOC aggiunte e rimosse sulle revisioni\\
+		\hline
+		Max. churn & Numero massimo di LOC aggiunte e rimosse tra le revisioni\\
+		\hline
+		Avg. chg. set & Media di file cambiati insieme sulle revisioni\\
+		\hline
+		Max. chg. set & Numero massimo di file cambiati insieme sulle revisioni\\
+		\hline
+		Num. of authors & Numero di autori\\
+		\hline
+		Num. of revs & Numero di revisioni\\
+		\hline
+	\end{tabular}
+	
+	
+\end{frame}
+
+\subsection{Costruzione del dataset: buggyness e snoring}
+\begin{frame}
+	\frametitle{Costruzione del dataset: buggyness e snoring}
+	
+	\begin{itemize}
+		\item Le informazioni ottenute da Jira vengono collegate a quelle ricavate da Git (ticket e release vengono 
+		associati ai commit, che permettono di risalire ai cambiamenti apportati al codice sorgente).
+		
+		\item Il dataset, oltre ad essere composto dalle metriche di interesse appena elencate, 
+		ha nella prima e seconda colonna rispettivamente
+		la versione del progetto Apache in esame, il path al file Java interessato 
+		(nel mezzo, le metriche) e come ultima colonna la buggyness.
+		
+		\item La buggyness 
+		(variabile binaria che può assumere valore "YES" o "NO" e che il classificatore deve predirre) viene 
+		determinata grazie al collegamento delle informazioni ricavate tra Jira e Git.
+	\end{itemize}
+	
+	\begin{alertblock}{Snoring}
+	Al fine di ridurre l'effetto dello snoring, ovvero bug dormienti non ancora rilevati, sono stati eliminati
+	tutti i dati relativi alla seconda metà delle releases. Dare in pasto al classificatore dati affetti da
+	snoring può comprometterne le prestazioni.
+	\end{alertblock}
+	
+\end{frame}
+
+\subsection{Classificatori e tecniche considerate}
+\begin{frame}
+	\frametitle{Classificatori e tecniche considerate}
+	
+	% breve descrizione tecniche usate e combinazioni
+	
+\end{frame}
+
+\subsection{Evaluation con walk forward}
+\begin{frame}
+	\frametitle{Evaluation con walk forward}
+	
+	% training set, testing set	
+	
+\end{frame}
+
+\section{Risultati}
+\begin{frame}
+	\frametitle{Risultati}
+	
+\end{frame}
+
+
+\section{Minacce alla validità}
+\begin{frame}
+	\frametitle{Minacce alla validità}
+	 
+\end{frame}
+
+\section{Links}
+\begin{frame}
+	\frametitle{Links}
+	
+	\begin{itemize}
+		\item GitHub: \url{https://github.com/StefanoBelli/isw2-deliverable}
+		\item SonarCloud: \url{https://sonarcloud.io/project/overview?id=StefanoBelli_isw2-deliverable}
+	\end{itemize}
+	
+\end{frame}
+
+\begin{frame}[noframenumbering, plain]
+    \frametitle{}
+    
+    \fontsize{30pt}{10pt}\selectfont
+    \centering
+    \textbf{Grazie per l'attenzione!}
+    
+\end{frame}
+
 
 \end{document}

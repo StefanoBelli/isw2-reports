@@ -620,8 +620,10 @@
 	Si è optato per un approccio multidimensionale "filtrato": è inutile combinare la destinazione con reference
 	null con le altre classi d'equivalenza e quindi è stato generato solo il primo test case che abbia come
 	dest il valore null.
-	La spiegazione dell'esito atteso \textit{"NullPointerException viene lanciata"} è uguale a quella fornita
-	per il metodo write, mentre \textit{"IllegalArgumentException viene lanciata"} significa che dall'esecuzione
+	La spiegazione dell'esito atteso \textit{"NullPointerException viene lanciata"} è che ci si aspetta NPE dato
+	che sempre per un ByteBuf null, write lanciava NPE e per read non vi è ulteriore documentazione a riguardo 
+	(si \underline{assume} il lancio dell'eccezione),
+	mentre \textit{"IllegalArgumentException viene lanciata"} significa che dall'esecuzione
 	del metodo ci si aspetta il lancio di IllegalArgumentException: non è presente nella documentazione, ma è
 	una unchecked exception: può non essere presente nella throws clause di un metodo.
 	I vari esiti \textit{"Buffer destinazione vuoto"} o 
@@ -973,10 +975,12 @@
 	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/WindowManager.html#getEarliestEventTs(long,long)}
 	{getEarliestEventTs}.
 	Dai report di adeguatezza inoltre, si evince come non è stata mai affrontata la situazione: 
-	"che cosa succede se si aggiungono ulteriori eventi (tramite uno degli
+	"che cosa succede se si aggiungono ulteriori eventi 
+	(in figura \ref{\getpicturelabel{storm/controlflow-missingmethods-WindowManager-1}} coverage pari a 0 di
+	metodi privati che gestiscono tali situazioni) tramite uno degli
 	overload del metodo 
 	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/WindowManager.html#add(T)}
-	{add}) e si ha una certa 
+	{add} e si ha una certa 
 	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/EvictionPolicy.html}
 	{EvictionPolicy} e 
 	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/windowing/TriggerPolicy.html}
@@ -1098,8 +1102,9 @@
 	si trovano le metriche di adeguatezza per la seconda iterazione. Le metriche di stmt. e
 	branch coverage sono aumentate per la classe (79\%,76\%), come previsto. 
 	E' anche aumentata la sua test 
-	strength (lncov: 82\%, mutcov: 65\%, ts: 80\%)
-	
+	strength (lncov: 82\%, mutcov: 65\%, ts: 80\%). In figura 
+	\ref{\getpicturelabel{storm/controlflow-missingmethods-WindowManager-2}} 
+	l'incremento di coverage dei metodi privati che permettono la gestione delle finestre.
 	In tabella \ref{\getreltablelabel{WindowManager}{\storm}} è presente la reliability.
 	
 	\newpage
@@ -1690,7 +1695,7 @@
 			\tcell{\unifdist{0.083}} &
 			\tcell{$0.834$}
 		\newtrow
-	}
+		}
 	
 	%
 	% Iter: 1, Class: BufferedChannel, Project: Bookkeeper
@@ -2428,6 +2433,9 @@
 				
 	\makepicture{12cm}{6cm}{storm/dataflow-getEventCount-WindowManager-1}
 				{\alldfcovcaption{getEventCount}{WindowManager}{1}{\storm}}
+				
+	\makepicture{17cm}{1.75cm}{storm/controlflow-missingmethods-WindowManager-1}
+				{\methodcfcovcaption{scanEvents e onTrigger}{WindowManager}{1}{\storm}}
 	
 	%
 	% Iter: 2, Class: WindowManager, Project: Storm
@@ -2595,8 +2603,6 @@
 		\newtrow
 	}
 	
-	\newpage
-	
 	\testctable{add}{WindowManager}{2}{\storm}{
 			\tcell{prng(), sctm()} &
 			\tcell{Nessuna invocazione del lifecycle listener} &
@@ -2676,6 +2682,9 @@
 				
 	\makepicture{12cm}{6cm}{storm/dataflow-add-WindowManager-2}
 				{\alldfcovcaption{add}{WindowManager}{2}{\storm}}
+				
+	\makepicture{17cm}{1.25cm}{storm/controlflow-missingmethods-WindowManager-2}
+				{\methodcfcovcaption{scanEvents e onTrigger}{WindowManager}{2}{\storm}}
 		
 	
 	\reltable{WindowManager}{\storm}{
