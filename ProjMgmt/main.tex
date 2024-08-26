@@ -5,6 +5,7 @@
 \usepackage{graphicx}
 \usepackage[font=tiny,labelfont=bf]{caption}
 \usepackage{hyperref}
+
 \hypersetup{colorlinks=true, linkcolor=black, urlcolor=blue}
 
 \usetheme{Boadilla}
@@ -24,6 +25,11 @@
 \renewcommand{\footnotesize}{\tiny}
 
 \setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{section in toc}{%
+  {\color{blue!70!black}\inserttocsectionnumber.}~\inserttocsection}
+\setbeamercolor{subsection in toc}{bg=white,fg=structure}
+\setbeamertemplate{subsection in toc}{%
+  \hspace{1.2em}{\color{blue}\rule[0.3ex]{3pt}{3pt}}~\inserttocsubsection\par}
 
 \begin{document}
 
@@ -33,6 +39,7 @@
 
 \begin{frame}
     \frametitle{Agenda}
+    \fontsize{8pt}{10pt}\selectfont
     \tableofcontents
 \end{frame}
 
@@ -50,8 +57,7 @@
 		quanto riguarda la loro progettazione e implementazione: per quali unità conviene focalizzarsi?
 		
 		\item Per aiutarci a rispondere a queste domande, possiamo usare un modello di machine learning che 
-		date informazioni sul codice sorgente, \underline{stimi} 
-		se l'unità sia "buggy" o meno
+		date informazioni sul codice sorgente, predica se l'unità sia "buggy" o meno
 		(e quindi, se generare dei test case per quest'ultima).
 	\end{itemize}
 \end{frame}
@@ -69,7 +75,7 @@
 			\item Prediction della buggyness di una classe Java
 		\end{itemize}
 	
-		\item Per la costruzione del dataset, e quindi la comparazione dei classificatori
+		\item Per la costruzione del dataset (e quindi la comparazione dei classificatori)
 		vengono sfruttati i progetti open source Apache BookKeeper e Apache Storm.
 	\end{itemize}
 \end{frame}
@@ -80,8 +86,8 @@
 	\frametitle{Recupero informazioni su release e tickets da Jira}
 	
 	Dal bug tracker Jira, utilizzato dalla Apache Software Foundation, vengono scaricati, tramite
-	la sua REST API, informazioni riguardo alle \underline{release} e ai \underline{ticket} che siano di tipo bug,
-	il cui stato sia chiuso e il bug risolto.
+	la sua REST API, informazioni riguardo alle \underline{release} e ai \underline{ticket} che siano di tipo
+	\textit{"bug"}, il cui stato sia \textit{"closed"} o \textit{"resolved"}, e la risoluzione \textit{"fixed"}
 	
 	\dflvspace
 	
@@ -90,7 +96,7 @@
 	
 	\dflvspace
 
-	In Jira, nella risposta JSON, per ogni ticket, sono di particolare interesse questi campi 
+	In Jira, nell'oggetto JSON della risposta, per ogni ticket, sono di particolare interesse questi campi 
 	(che ci permetteranno di capire le release affette dal bug):
 	\begin{itemize}
 		\item L'array \textit{fields.version}
@@ -105,15 +111,19 @@
 	\frametitle{Ciclo di vita del difetto}
 	Al fine di determinare le versioni affette dal bug, definiamo:
 	\begin{itemize}
-		\item L' injected version (\textit{IV}) che è il numero di versione in cui è stato introdotto il bug
-		\item L' opening version (\textit{OV}) che è il numero di versione in cui è stato aperto il ticket relativo al bug
-		\item La fixed version (\textit{FV}) che è il numero di versione in cui è stato risolto il bug
+		\item L' \textbf{injected version} (\textit{IV})
+		che è il numero di versione in cui è stato introdotto il bug
+		\item L' \textbf{opening version} (\textit{OV}) 
+		che è il numero di versione in cui è stato aperto il ticket relativo al bug
+		\item La \textbf{fixed version} (\textit{FV}) 
+		che è il numero di versione in cui è stato risolto il bug
 	\end{itemize}
 	Tutte e 3 le \textit{IV},\textit{OV} e \textit{FV} permettono di individuare il "ciclo di vita" completo del
 	bug, che è presente da \textit{IV} (incluso) fino a \textit{FV} (escluso).
 	\begin{alertblock}{Problema}
-	Le API di Jira, forniscono sempre riguardo alla creazione del ticket e alla sua risoluzione (permettendo di determinare, rispettivamente: opening e fixed version), ma non sempre rispetto alle affected versions, non
-	permettendo di individuare la injected version!
+	Le API di Jira, forniscono sempre informazioni riguardo alla creazione del ticket e alla sua risoluzione
+	(permettendo di determinare, rispettivamente: opening e fixed version), 
+	ma non sempre rispetto alle affected versions, non permettendo sempre di individuare la injected version!
 	\end{alertblock}
 \end{frame}
 
@@ -168,7 +178,7 @@
 		collezionare informazioni su commit e quindi anche sul codice sorgente 
 		(esclusivamente classi Java) del repo di interesse.
 		
-		\item Tramite Git si possono quindi calcolare delle metriche di interesse
+		\item Dalle informazioni ricavate da Git, si possono calcolare delle metriche di interesse
 		su un certo file Java che verranno poi utilizzate dal classificatore ai
 		fini della predizione
 	\end{itemize}
@@ -217,21 +227,25 @@
 	\frametitle{Costruzione del dataset: buggyness e snoring}
 	
 	\begin{itemize}
-		\item Le informazioni ottenute da Jira vengono collegate a quelle ricavate da Git (ticket e release vengono 
-		associati ai commit, che permettono di risalire ai cambiamenti apportati al codice sorgente).
+		\item Le informazioni ottenute da Jira vengono "collegate" a quelle ricavate da Git (ticket e release vengono 
+		associati ai commit).
 		
 		\item Il dataset, oltre ad essere composto dalle metriche di interesse appena elencate, 
 		ha nella prima e seconda colonna rispettivamente
-		la versione del progetto Apache in esame, il path al file Java interessato 
-		(nel mezzo, le metriche) e come ultima colonna la buggyness.
+		la versione del progetto Apache in esame, il path al file Java interessato , nel mezzo le metriche,
+		e come ultima colonna la buggyness.
 		
-		\item La buggyness 
+		\item La \textbf{buggyness}
 		(variabile binaria che può assumere valore "YES" o "NO" e che il classificatore deve predirre) viene 
 		determinata grazie al collegamento delle informazioni ricavate tra Jira e Git.
+		\begin{itemize}
+			\item Una classe Java è \textit{buggy} se la versione $v$ in cui ricade è compresa nell'intervallo 
+			$IV \le v < FV$
+		\end{itemize}
 	\end{itemize}
 	
 	\begin{alertblock}{Snoring}
-	Al fine di ridurre l'effetto dello snoring, ovvero bug dormienti non ancora rilevati, sono stati eliminati
+	Al fine di ridurre l'effetto dello \textbf{snoring}, ovvero bug dormienti non rilevati, sono stati eliminati
 	tutti i dati relativi alla seconda metà delle releases. Dare in pasto al classificatore dati affetti da
 	snoring può comprometterne le prestazioni.
 	\end{alertblock}
@@ -242,29 +256,216 @@
 \begin{frame}
 	\frametitle{Classificatori e tecniche considerate}
 	
-	% breve descrizione tecniche usate e combinazioni
+	\fontsize{9pt}{10pt}\selectfont
 	
+	Sono stati utilizzati 3 classificatori diversi\dots
+	\begin{itemize}
+		\item Random forest
+		\item Naive Bayes
+		\item IBk
+	\end{itemize}
+	
+	\dflvspace
+	
+	\begin{columns}[T]
+		\begin{column}{0.5\linewidth}
+		\dots ognuno con le seguenti tecniche\dots
+		
+		\dflvspace
+		
+		\textbf{Feature selection}
+		\begin{itemize}
+			\item Nessuna tecnica di feature selection
+			\item Best first backward
+		\end{itemize}
+	
+		\dflvspace	
+	
+		\textbf{Sampling}
+		\begin{itemize}
+			\item Nessuna tecnica di sampling
+			\item SMOTE
+			\item Undersampling
+		\end{itemize}
+	
+		\dflvspace
+	
+		\textbf{Cost sensitivity}
+		\begin{itemize}
+			\item Nessuna tecnica di cost sensitivity
+			\item Sensitive Learning
+		\end{itemize}
+		\end{column}
+	
+		\begin{column}{0.5\linewidth}
+		\dots combinate come segue:
+		\begin{tabular}{|c|}
+			\hline
+			Nessuna tecnica utilizzata\\
+			\hline
+			Solo sensitive learning\\
+			\hline
+			Solo best first backward\\
+			\hline
+			Solo undersampling\\
+			\hline 
+			Solo SMOTE\\
+			\hline
+			Best first backward e sens. learning\\
+			\hline
+			Best first backward e undersampling\\
+			\hline
+			Best first backward e SMOTE\\
+			\hline
+		\end{tabular}
+		\end{column}
+	
+	\end{columns}
 \end{frame}
 
 \subsection{Evaluation con walk forward}
 \begin{frame}
 	\frametitle{Evaluation con walk forward}
 	
-	% training set, testing set	
+	\fontsize{9pt}{10pt}\selectfont
 	
+	Lo strumento utilizzato per valutare le prestazioni dei classificatori (con o senza tecniche) è
+	una tecnica di tipo time-series: walk forward.
+	
+	\begin{itemize}
+		\item Nella figura sottostante è presente un esempio di esecuzione dell'evaluation.
+	
+		\item Nel nostro caso, la prima run, non viene effettuata a prescindere dato che non abbiamo un training set con cui addestrare
+		un classificatore e quindi viene ritenuta inutile.
+		\item Le run per BookKeeper partono dalla run 3 
+		(2 training rels. + 1 testing rel), 
+		mentre le run per Storm partono dalla run 4 (3 training rels.  + 1 testing rel.)
+		\begin{itemize}
+			\item Essendo una tecnica time-series, i dati disponibili fino alle release di training non rivelano
+			alcuna classe buggy, impedendo l'addestramento del classificatore
+		\end{itemize}
+	\end{itemize}
+	
+	\begin{center}
+	\includegraphics[width=4cm, height=2.25cm]{walkforward}
+	\end{center}
+	
+	\fontsize{8pt}{10pt}\selectfont
+	
+	Il \textbf{training set} deve riflettere l'utilizzo reale del classificatore, 
+	può essere affetto da snoring: non utilizziamo i dati del futuro per determinare 
+	la buggyness (la tecnica è time-series), al contrario, per il \textbf{testing set}
+	vengono utilizzati tutti i dati a nostra disposizione, deve essere
+	il più accurato possibile e non deve essere affetto da snoring (idealmente)
 \end{frame}
 
 \section{Risultati}
+\subsection{Risultati per BookKeeper}
 \begin{frame}
 	\frametitle{Risultati}
 	
+	\centering
+	\begin{figure}
+	\includegraphics[width=10cm, height=6cm]{bookkeeper-f1score}
+	\caption{Il box plot verde è per Random forest, rosso per Naive Bayes, blu per IBk}
+	\end{figure}
 \end{frame}
 
-
-\section{Minacce alla validità}
 \begin{frame}
-	\frametitle{Minacce alla validità}
-	 
+	\frametitle{Risultati}
+	
+	\centering
+	\begin{figure}
+	\includegraphics[width=10cm, height=6cm]{bookkeeper-kappa}
+	\caption{Il box plot verde è per Random forest, rosso per Naive Bayes, blu per IBk}
+	\end{figure}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Risultati}
+	
+	\centering
+	\begin{figure}
+	\includegraphics[width=10cm, height=6cm]{bookkeeper-auc}
+	\caption{Il box plot verde è per Random forest, rosso per Naive Bayes, blu per IBk}
+	\end{figure}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Risultati}
+	
+	\centering
+	\begin{figure}
+	\includegraphics[width=10cm, height=6cm]{bookkeeper-npofb20}
+	\caption{Il box plot verde è per Random forest, rosso per Naive Bayes, blu per IBk}
+	\end{figure}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Risultati}
+	
+	\centering
+	\begin{figure}
+	\includegraphics[width=10cm, height=6cm]{bookkeeper-cost}
+	\caption{Il box plot verde è per Random forest, rosso per Naive Bayes, blu per IBk}
+	\end{figure}
+\end{frame}
+
+\subsection{Risultati per Storm}
+\begin{frame}
+	\frametitle{Risultati}
+	
+	\centering
+	\begin{figure}
+	\includegraphics[width=10cm, height=6cm]{storm-f1score}
+	\caption{Il box plot verde è per Random forest, rosso per Naive Bayes, blu per IBk}
+	\end{figure}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Risultati}
+	
+	\centering
+	\begin{figure}
+	\includegraphics[width=10cm, height=6cm]{storm-kappa}
+	\caption{Il box plot verde è per Random forest, rosso per Naive Bayes, blu per IBk}
+	\end{figure}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Risultati}
+	
+	\centering
+	\begin{figure}
+	\includegraphics[width=10cm, height=6cm]{storm-auc}
+	\caption{Il box plot verde è per Random forest, rosso per Naive Bayes, blu per IBk}
+	\end{figure}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Risultati}
+	
+	\centering
+	\begin{figure}
+	\includegraphics[width=10cm, height=6cm]{storm-npofb20}
+	\caption{Il box plot verde è per Random forest, rosso per Naive Bayes, blu per IBk}
+	\end{figure}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Risultati}
+	
+	\centering
+	\begin{figure}
+	\includegraphics[width=10cm, height=6cm]{storm-cost}
+	\caption{Il box plot verde è per Random forest, rosso per Naive Bayes, blu per IBk}
+	\end{figure}
+\end{frame}
+
+\section{Conclusioni e minacce alla validità}
+\begin{frame}
+	\frametitle{Conclusioni e minacce alla validità}
+	
 \end{frame}
 
 \section{Links}
