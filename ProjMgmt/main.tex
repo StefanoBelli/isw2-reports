@@ -392,6 +392,16 @@
 \begin{frame}
 	\frametitle{Risultati per BookKeeper: F1-score}
 	
+	\fontsize{7pt}{8pt}\selectfont
+	
+	Nonostante si distingua Naive Bayes con feature selection e sensitive learning per
+	il valore massimo più alto, la sua variabilità è molto elevata. In termini
+	di compromesso tra valori di F1-score elevati e variabilità bassa, non risulta
+	semplice scegliere un classificatore. Tra tutte le soluzioni proposte, IBk senza
+	feature selection sembra essere la migliore (in particolare IBk con SMOTE).
+	Osserviamo comunque, come l'applicazione di feature selection risulti in
+	F1-score e variabilità bassa, senza accade esattamente il contrario.
+	
 	\centering
 	\begin{figure}
 	\includegraphics[width=10cm, height=6cm]{bookkeeper-f1score}
@@ -402,6 +412,17 @@
 \begin{frame}
 	\frametitle{Risultati per BookKeeper: Kappa}
 	
+	\fontsize{7pt}{8pt}\selectfont
+	
+	Il kappa \textbf{peggiore} è sicuramente quello di Naive Bayes 
+	senza feature selection con SMOTE e ancora no fe.sel sia con che 
+	senza sens. learning.
+	IBk si riconferma il migliore, in particolare con l'applicazione di feature 
+	selection, no cost sensitivity (anche se usare sens. learning con IBk + feature
+	selection non sembra essere una
+	cattiva idea: il valore massimo è inferiore, ma non troppo, rispetto al precedente ma la variabilità più bassa, con un
+	valore minimo e mediana leggermente più alti)
+	
 	\centering
 	\begin{figure}
 	\includegraphics[width=10cm, height=6cm]{bookkeeper-kappa}
@@ -411,6 +432,18 @@
 
 \begin{frame}
 	\frametitle{Risultati per BookKeeper: AUC}
+	
+	\fontsize{7pt}{8pt}\selectfont
+	
+	Naive Bayes sembra essere quello che ha i valori massimi più alti, ma anche i
+	valori minimi e mediane più bassi, oltre che elevata variabilità.
+	Per quanto riguarda IBk, la mediana è decisamente più elevata rispetto agli
+	altri due classificatori, con tutte le combinazioni delle tecniche.
+	Random forest con SMOTE (no cost. sens.) 
+	sembra essere la scelta migliore in questo caso: è vero che, ad esempio rispetto
+	a IBk + SMOTE (no cost. sens.) la mediana di RF + SMOTE (no cost. sens.)
+	è più bassa ma il valore massimo e minimo sono più elevati
+	e la variabilità è molto simile.
 	
 	\centering
 	\begin{figure}
