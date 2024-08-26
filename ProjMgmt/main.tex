@@ -394,13 +394,8 @@
 	
 	\fontsize{7pt}{8pt}\selectfont
 	
-	Nonostante si distingua Naive Bayes con feature selection e sensitive learning per
-	il valore massimo più alto, la sua variabilità è molto elevata. In termini
-	di compromesso tra valori di F1-score elevati e variabilità bassa, non risulta
-	semplice scegliere un classificatore. Tra tutte le soluzioni proposte, IBk senza
-	feature selection sembra essere la migliore (in particolare IBk con SMOTE).
-	Osserviamo comunque, come l'applicazione di feature selection risulti in
-	F1-score e variabilità bassa, senza accade esattamente il contrario.
+	Tra tutte le soluzioni proposte, \textbf{IBk senza
+	feature selection, con SMOTE, no cost sensitivity, sembra essere la migliore}.
 	
 	\centering
 	\begin{figure}
@@ -414,13 +409,18 @@
 	
 	\fontsize{7pt}{8pt}\selectfont
 	
-	Il kappa \textbf{peggiore} è sicuramente quello di Naive Bayes 
-	senza feature selection con SMOTE e ancora no fe.sel sia con che 
-	senza sens. learning.
-	IBk si riconferma il migliore, in particolare con l'applicazione di feature 
-	selection, no cost sensitivity (anche se usare sens. learning con IBk + feature
-	selection non sembra essere una
-	cattiva idea: il valore massimo è inferiore, ma non troppo, rispetto al precedente ma la variabilità più bassa, con un
+	I kappa peggiori sono sicuramente quelli di Naive Bayes 
+	senza feature selection con SMOTE (no cost sensitivity), Naive Bayes senza
+	applicazione di feature selection, senza balancing, no cost sensitivity e 
+	Naive Bayes senza applicazione di feature selection, senza balancing, sens.
+	learning.
+	\textbf{IBk si riconferma il migliore, 
+	in particolare con l'applicazione di feature 
+	selection, no balancing, no cost sensitivity} 
+	(anche se usare sens. learning con IBk con feature
+	selection, no balancing, non sembra essere una
+	cattiva idea: il valore massimo è inferiore, ma non troppo e
+	rispetto al precedente ha un
 	valore minimo e mediana leggermente più alti)
 	
 	\centering
@@ -436,14 +436,14 @@
 	\fontsize{7pt}{8pt}\selectfont
 	
 	Naive Bayes sembra essere quello che ha i valori massimi più alti, ma anche i
-	valori minimi e mediane più bassi, oltre che elevata variabilità.
+	valori minimi e mediane più bassi.
 	Per quanto riguarda IBk, la mediana è decisamente più elevata rispetto agli
 	altri due classificatori, con tutte le combinazioni delle tecniche.
-	Random forest con SMOTE (no cost. sens.) 
-	sembra essere la scelta migliore in questo caso: è vero che, ad esempio rispetto
-	a IBk + SMOTE (no cost. sens.) la mediana di RF + SMOTE (no cost. sens.)
-	è più bassa ma il valore massimo e minimo sono più elevati
-	e la variabilità è molto simile.
+	\textbf{Random forest con SMOTE, no feature selection, no cost sensitivity,
+	sembra essere la scelta migliore} in questo caso: è vero che, ad esempio, rispetto
+	a IBk con SMOTE, no cost sensitivity, no balancing,
+	la mediana di RF con SMOTE, no feature selection, no cost sensitivity,
+	è più bassa ma il valore massimo e minimo sono più elevati.
 	
 	\centering
 	\begin{figure}
