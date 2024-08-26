@@ -5,6 +5,7 @@
 \usepackage{graphicx}
 \usepackage[font=tiny,labelfont=bf]{caption}
 \usepackage{hyperref}
+\usepackage{tikz}
 
 \hypersetup{colorlinks=true, linkcolor=black, urlcolor=blue}
 
@@ -109,6 +110,9 @@
 \subsection{Ciclo di vita del difetto}
 \begin{frame}
 	\frametitle{Ciclo di vita del difetto}
+	
+	\fontsize{10pt}{10pt}\selectfont
+	
 	Al fine di determinare le versioni affette dal bug, definiamo:
 	\begin{itemize}
 		\item L' \textbf{injected version} (\textit{IV})
@@ -118,6 +122,25 @@
 		\item La \textbf{fixed version} (\textit{FV}) 
 		che è il numero di versione in cui è stato risolto il bug
 	\end{itemize}
+	
+	\begin{center}
+	\begin{tikzpicture}
+		\draw (0,0) -- (2,0);
+		\draw[color=red] (2,0) -- (5,0);
+		\draw[color=red] (5,0) -- (8,0);
+		\draw[->] (8,0) -- (11,0);
+		\draw[fill=red] (2,0) circle (2pt) 
+							node[above]{\small{$IV$}} 
+							node[below]{\tiny{$2$}};
+		\draw[fill=red] (5,0) circle (2pt) 
+							node[above]{\small{$OV$}}
+							node[below]{\tiny{$5$}};
+		\draw[fill=white] (8,0) circle (2pt) 
+							node[above]{\small{$FV$}}
+							node[below]{\tiny{$8$}};
+	\end{tikzpicture}
+	\end{center}
+	
 	Tutte e 3 le \textit{IV},\textit{OV} e \textit{FV} permettono di individuare il "ciclo di vita" completo del
 	bug, che è presente da \textit{IV} (incluso) fino a \textit{FV} (escluso).
 	\begin{alertblock}{Problema}
@@ -127,7 +150,7 @@
 	\end{alertblock}
 \end{frame}
 
-\subsection{Proportion}
+\subsection{Utilizzo della tecnica proportion}
 \begin{frame}
 	\frametitle{Utilizzo della tecnica proportion}
 	Se l'injected version non è nota, per un certo bug
@@ -256,7 +279,7 @@
 \begin{frame}
 	\frametitle{Classificatori e tecniche considerate}
 	
-	\fontsize{9pt}{10pt}\selectfont
+	\fontsize{7pt}{8pt}\selectfont
 	
 	Sono stati utilizzati 3 classificatori diversi\dots
 	\begin{itemize}
@@ -265,13 +288,9 @@
 		\item IBk
 	\end{itemize}
 	
-	\dflvspace
-	
 	\begin{columns}[T]
 		\begin{column}{0.5\linewidth}
 		\dots ognuno con le seguenti tecniche\dots
-		
-		\dflvspace
 		
 		\textbf{Feature selection}
 		\begin{itemize}
@@ -279,16 +298,12 @@
 			\item Best first backward
 		\end{itemize}
 	
-		\dflvspace	
-	
 		\textbf{Sampling}
 		\begin{itemize}
 			\item Nessuna tecnica di sampling
 			\item SMOTE
 			\item Undersampling
 		\end{itemize}
-	
-		\dflvspace
 	
 		\textbf{Cost sensitivity}
 		\begin{itemize}
@@ -319,8 +334,21 @@
 			\hline
 		\end{tabular}
 		\end{column}
-	
 	\end{columns}
+	\dflvspace
+	La \underline{valutazione} viene effettuata tramite l'ausilio 4 metriche: 
+	\textbf{F1-score} 
+	(media armonica tra precision e recall, il cui valore sta nel range $[0,1]$: 
+	è 1 se lo sono sia precision che recall, è 0 alla stessa condizione),
+	\textbf{Kappa}, \textbf{AUC}, 
+	\textbf{NPofB20} (percentuale di bug che
+	possono essere trovati analizzando il top 20\% di LOC. Il ranking, per definire
+	il \textit{"top 20\% di LOC"}
+	è effettuato sulla prob. pred. di buggyness diviso la size dell'unità
+	presa in considerazione).
+	
+	Ne viene valutato, inoltre, il \textbf{costo}: $CFN \cdot FN + CFP \cdot FP$ con
+	$CFN=10,\;CFP=1$
 \end{frame}
 
 \subsection{Evaluation con walk forward}
@@ -362,7 +390,7 @@
 \section{Risultati}
 \subsection{Risultati per BookKeeper}
 \begin{frame}
-	\frametitle{Risultati}
+	\frametitle{Risultati per BookKeeper: F1-score}
 	
 	\centering
 	\begin{figure}
@@ -372,7 +400,7 @@
 \end{frame}
 
 \begin{frame}
-	\frametitle{Risultati}
+	\frametitle{Risultati per BookKeeper: Kappa}
 	
 	\centering
 	\begin{figure}
@@ -382,7 +410,7 @@
 \end{frame}
 
 \begin{frame}
-	\frametitle{Risultati}
+	\frametitle{Risultati per BookKeeper: AUC}
 	
 	\centering
 	\begin{figure}
@@ -392,7 +420,7 @@
 \end{frame}
 
 \begin{frame}
-	\frametitle{Risultati}
+	\frametitle{Risultati per BookKeeper: NPofB20}
 	
 	\centering
 	\begin{figure}
@@ -402,7 +430,7 @@
 \end{frame}
 
 \begin{frame}
-	\frametitle{Risultati}
+	\frametitle{Risultati per BookKeeper: costi}
 	
 	\centering
 	\begin{figure}
@@ -413,7 +441,7 @@
 
 \subsection{Risultati per Storm}
 \begin{frame}
-	\frametitle{Risultati}
+	\frametitle{Risultati per Storm: F1-score}
 	
 	\centering
 	\begin{figure}
@@ -423,7 +451,7 @@
 \end{frame}
 
 \begin{frame}
-	\frametitle{Risultati}
+	\frametitle{Risultati per Storm: Kappa}
 	
 	\centering
 	\begin{figure}
@@ -433,7 +461,7 @@
 \end{frame}
 
 \begin{frame}
-	\frametitle{Risultati}
+	\frametitle{Risultati per Storm: AUC}
 	
 	\centering
 	\begin{figure}
@@ -443,7 +471,7 @@
 \end{frame}
 
 \begin{frame}
-	\frametitle{Risultati}
+	\frametitle{Risultati per Storm: NPofB20}
 	
 	\centering
 	\begin{figure}
@@ -453,7 +481,7 @@
 \end{frame}
 
 \begin{frame}
-	\frametitle{Risultati}
+	\frametitle{Risultati per Storm: costi}
 	
 	\centering
 	\begin{figure}
