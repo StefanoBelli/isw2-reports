@@ -394,8 +394,8 @@
 	
 	\fontsize{7pt}{8pt}\selectfont
 	
-	Tra tutte le soluzioni proposte, \textbf{IBk senza
-	feature selection, con SMOTE, no cost sensitivity, ha l'F1-score migliore}.
+	Tra tutte le soluzioni proposte, \textbf{IBk no
+	feature selection, si SMOTE, no cost sensitivity, ha l'F1-score migliore}.
 	
 	\centering
 	\begin{figure}
@@ -414,14 +414,11 @@
 	applicazione di feature selection, senza balancing, no cost sensitivity e 
 	Naive Bayes senza applicazione di feature selection, senza balancing, sens.
 	learning.
-	\textbf{IBk ha il kappa migliore, 
-	in particolare con l'applicazione di feature 
-	selection, no balancing, no cost sensitivity} 
-	(anche se sens. learning con IBk con feature
-	selection, no balancing, non sembra essere una
-	male: il valore massimo è inferiore, ma non troppo e
-	rispetto al precedente ha un
-	valore minimo e mediana leggermente più alti)
+	\textbf{IBk si feature 
+	selection, no balancing, no cost sensitivity, ha il kappa migliore} 
+	(anche se IBk, si feature selection, no balancing, si sens. learning, 
+	non sembra essere male: il valore massimo è inferiore, ma non troppo e
+	rispetto al precedente ha un valore minimo e mediana leggermente più alti)
 	
 	\centering
 	\begin{figure}
@@ -439,11 +436,8 @@
 	valori minimi e mediane più bassi.
 	Per quanto riguarda IBk, la mediana è decisamente più elevata rispetto agli
 	altri due classificatori, con tutte le combinazioni delle tecniche.
-	\textbf{Random forest con SMOTE, no feature selection, no cost sensitivity,
-	ha l'AUC migliore} in questo caso: è vero che, ad esempio, rispetto
-	a IBk con SMOTE, no cost sensitivity, no balancing,
-	la mediana di RF con SMOTE, no feature selection, no cost sensitivity,
-	è più bassa ma il valore massimo e minimo sono più elevati.
+	\textbf{Random forest, no feature selection, si SMOTE, no cost sensitivity,
+	ha l'AUC migliore}.
 	
 	\centering
 	\begin{figure}
@@ -455,6 +449,15 @@
 \begin{frame}
 	\frametitle{Risultati per BookKeeper: NPofB20}
 	
+	\fontsize{7pt}{8pt}\selectfont
+	
+	In generale, l'applicazione di feature selection peggiora NPofB20 per tutti i
+	classificatori e le possibili combinazioni di balancing e cost sensitivity
+	(tutti i 3 riquadri sopra).
+	\textbf{IBk, no feature selection, si SMOTE, no cost sensitivity, ha l'
+	NPofB20 migliore} (nonostante altri classificatori riescono ad ottenere risultati
+	simili in termini di massimo, riesce ad avere minimo e mediana più alti).
+	
 	\centering
 	\begin{figure}
 	\includegraphics[width=10cm, height=6cm]{bookkeeper-npofb20}
@@ -464,6 +467,12 @@
 
 \begin{frame}
 	\frametitle{Risultati per BookKeeper: costi}
+	
+	\fontsize{7pt}{8pt}\selectfont
+	
+	Risulta chiaro che l'applicazione di feature selection incrementa notevolmente il costo.
+	\textbf{Random forest senza l'applicazione di alcuna tecnica è il classificatore con il
+	costo più basso}
 	
 	\centering
 	\begin{figure}
@@ -476,6 +485,16 @@
 \begin{frame}
 	\frametitle{Risultati per Storm: F1-score}
 	
+	\fontsize{7pt}{8pt}\selectfont
+	
+	Tutti i classificatori, di tutte le combinazioni presentano, più o meno, lo stesso minimo.	
+	L'applicazione di feature selection sembra migliorare notevolmente il massimo assunto dai classificatori.
+	In combinazione al feature selection, utilizzare sensitive learning migliora notevolmente la metrica 
+	F1-score, e quello con punteggio più alto è IBk o Random forest.
+	A parità di minimo, \textbf{Random forest, si feature selection, no balancing, si sens. learning, risulta
+	essere quello con punteggio F1 più alto}, ma con le stesse identiche tecniche applicate, anche IBk non
+	è male: viene scelto RF solo perchè ha massimo e mediana più alti.
+	
 	\centering
 	\begin{figure}
 	\includegraphics[width=10cm, height=6cm]{storm-f1score}
@@ -485,6 +504,15 @@
 
 \begin{frame}
 	\frametitle{Risultati per Storm: Kappa}
+	
+	\fontsize{7pt}{8pt}\selectfont
+	
+	Il sensitive learning si riconferma una tecnica molto efficace, in particolare con IBk.
+	
+	Con un outlier $> 0.4$, 
+	\textbf{IBk, si feature selection, no balancing, si sensitive learning è la combinazione che fornisce
+	kappa migliore}. Si distingue anche la stessa configurazione, ma senza feature selection (di fatto, molto
+	simili).
 	
 	\centering
 	\begin{figure}
@@ -496,6 +524,21 @@
 \begin{frame}
 	\frametitle{Risultati per Storm: AUC}
 	
+	\fontsize{7pt}{8pt}\selectfont
+	
+	Per quasi tutte le combinazioni, IBk risulta essere il migliore in termini di AUC.
+	
+	Tutti i box plot riguardanti AUC di IBk sono a loro volta simili, ad eccezione per l'undersampling.
+	
+	\underline{Scelto} IBk e 
+	\underline{scartate} le configurazioni che hanno come balancing l'undersampling, si possono anche
+	\underline{scartare} quelle che non hanno applicato feature selection 
+	(i minimi sono gli stessi, i massimi più
+	bassi, rispetto alle configurazioni che applicano feature selection).
+	
+	\textbf{IBk, si feature selection, no balancing, si sensitive learning, risulta essere quello con AUC
+	migliore}
+	
 	\centering
 	\begin{figure}
 	\includegraphics[width=10cm, height=6cm]{storm-auc}
@@ -506,6 +549,10 @@
 \begin{frame}
 	\frametitle{Risultati per Storm: NPofB20}
 	
+	\fontsize{7pt}{8pt}\selectfont
+	
+	\textbf{Random forest, si feature selection, no balancing, no sens. learning ha l'NPofB20 migliore}
+	
 	\centering
 	\begin{figure}
 	\includegraphics[width=10cm, height=6cm]{storm-npofb20}
@@ -515,6 +562,11 @@
 
 \begin{frame}
 	\frametitle{Risultati per Storm: costi}
+	
+	\fontsize{7pt}{8pt}\selectfont
+	
+	\textbf{IBk, no feature selection, no balancing, si sens. learning ha il costo migliore 
+	(tendenzialmente più basso)}
 	
 	\centering
 	\begin{figure}
