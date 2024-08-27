@@ -579,6 +579,48 @@
 \begin{frame}
 	\frametitle{Conclusioni e minacce alla validità}
 	
+	\fontsize{7pt}{8pt}\selectfont
+	
+	\textbf{Conclusioni}
+	
+	\begin{itemize}
+	
+		\item 
+		Non esiste una scelta migliore dell'altra, tuttavia, possiamo affermare che per BookKeeper una scelta
+		non da fare è sicuramente usare Naive Bayes e mentre IBk ottiene complessivamente metriche migliori, per
+		Random Forest si tende a registrare un costo più basso. Una eventuale scelta comunque, ricadrebbe su IBk,
+		con la sola applicazione di balancing (SMOTE), dato che l'F1-score è il migliore, 
+		mentre kappa e AUC non sono le
+		migliori, ma nemmeno le peggiori (si preferisce un F1-score più alto).
+		La scelta di IBk con la sola applicazione di SMOTE è confermata da NPofB20.
+		C'è comunque da ricordare che
+		i dati, e il numero di iterazioni di walk forward per BookKeeper è basso, a causa delle poche release
+		a disposizione.
+		
+		\item
+		In Storm, conviene sempre scartare Naive Bayes, e per quasi tutte le metriche, usare IBk o Random forest
+		con la configurazione:
+		feature selection (best first backward), niente balancing e cost sensitivity (sensitive learning).
+		Mantenendo la preferenza per un F1-score alto, ma anche tenendo in considerazione kappa, AUC e costi,
+		conviene sicuramente utilizzare IBk con feature selection (best first backward), no balancing e 
+		con cost sensitivity (sensitive learning), che rappresenta un buon compromesso per le metriche e il costo
+		considerati. 
+		NPofB20 tende a favorire Random forest (si feature selection, no balancing, no sens. learning),
+		ma AUC e Kappa e la poca differenza per l'F1-score, sposta l'ago della bilancia a favore di IBk con le
+		tecniche scelte, anche se, comunque, conviene sempre ricordare che la scelta dipende dal
+		caso di utilizzo.
+		I dati a disposizione e il numero di release elevati ha sicuramente permesso di ottenere dei risultati più
+		affidabili rispetto a BookKeeper.
+	\end{itemize}
+	
+	\textbf{Minacce alla validità}
+	
+	\begin{itemize}
+		\item Si assume che le informazioni prelevate da Jira siano affidabili
+		\item Le release e i ticket senza commit vengono scartati
+		\item La prima iterazione di walk forward non viene mai eseguita
+	\end{itemize}
+	
 \end{frame}
 
 \section{Links}
