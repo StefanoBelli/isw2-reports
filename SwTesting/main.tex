@@ -1107,6 +1107,114 @@
 	l'incremento di coverage dei metodi privati che permettono la gestione delle finestre.
 	In tabella \ref{\getreltablelabel{WindowManager}{\storm}} è presente la reliability.
 	
+	\subsection{org.apache.storm.topology.WindowedBoltExecutor}
+	
+	La classe \href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/topology/WindowedBoltExecutor.html}
+	{WindowedBoltExecutor} permette all'utilizzatore di eseguire un windowed bolt (interfaccia 
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/topology/IWindowedBolt.html}
+	{IWindowedBolt}) senza preoccuparsi della gestione delle window: 
+	l'executor colleziona le tuple, effettua sliding delle finestre ed esegue il bolt sulla finestra di tuple
+	in modo da poterle processare. Ci si concentra sul corretto funzionamento di WindowedBoltExecutor, e non sul processamento
+	delle tuple, che riguarda il bolt.
+	
+	\subsubsection{Prima iterazione}
+	
+	Vengono sottoposti a testing i metodi 
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/topology/WindowedBoltExecutor.html#prepare(java.util.Map,org.apache.storm.task.TopologyContext,org.apache.storm.task.OutputCollector)}
+	{prepare} e 
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/topology/WindowedBoltExecutor.html#execute(org.apache.storm.tuple.Tuple)}
+	{execute} perchè sono quelli fondamentali al fine di impostare ed eseguire il bolt.
+	
+	\textbf{Per il metodo prepare}: in tabella 
+	\ref{\gettablelabel{ceq}{prepare}{WindowedBoltExecutor}{1}{\storm}},
+	\ref{\gettablelabel{bv}{prepare}{WindowedBoltExecutor}{1}{\storm}} e 
+	\ref{\gettablelabel{testc}{prepare}{WindowedBoltExecutor}{1}{\storm}} sono presenti le classi d'equivalenza, boundary values
+	e test cases individuati. Nelle classi d'eq.: la \ceq{config invalida} è quella che non specifica la lunghezza della lunghezza
+	della finestra (quella valida, al contrario, si), il \ceq{context invalido} è l'oggetto TopologyContext i cui argomenti del
+	costruttore sono tutti nulls, il \ceq{context valido} è un oggetto TopologyContext mocked, mentre per \ceq{collector invalido},
+	è un OutputCollector con delegate null (metodi di gestione eventi dall'OutputCollector), mentre \ceq{collector valido} è
+	l'OutputCollector con una classe che implementa l'interfaccia IOutputCollector e effettua l'override dei metodi astratti
+	(ridotti comunque a noops). Nei boundary values, la notazione \textit{"Map\{\}"} indica la creazione di una 
+	Map<String,Object> vuota
+	(a livello implementativo, è una HashMap<String,Object>), mentre con la stessa notazione, ma con le tuple: 
+	\textit{"Map\{(TOPOLOGY\_\dots,4)\}"} si intende la creazione di una Map<String,Object> e l'aggiunta di coppie chiave-valore con il metodo put
+	dell'interfaccia java.util.Map. Nei test cases, validOutputCollector, invalidOutputCollector, \dots indicano la creazione di
+	oggetti come specificato sopra.
+	E' stato utilizzato un approccio multidimensionale alla generazione dei test.
+	Gli esiti attesi \textit{"RuntimeException viene lanciata"} indica il possibile lancio di una
+	unchecked exception (non presente nella throws declaration, ma uno o più parametri sono null e quindi è lecito aspettarsi
+	un qualsiasi tipo di eccezione), \textit{"IllegalArgumentException viene lanciata"} è una RuntimeException specializzata,
+	viene indicata nell'esito atteso perchè sono presenti tutti valori non-null ma in configurazione non valida.
+	La \textit{"Terminazione con successo"} viene riconosciuta accertandosi, con Mockito.verify(), dell'invocazione del metodo 
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/task/IBolt.html#prepare(java.util.Map,org.apache.storm.task.TopologyContext,org.apache.storm.task.OutputCollector)}
+	{prepare} 
+	del bolt (mocked) passato al 
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/topology/WindowedBoltExecutor.html#\%3Cinit\%3E(org.apache.storm.topology.IWindowedBolt)}
+	{costruttore} 
+	di WindowedBoltExecutor	\underline{esattamente} una volta, e nessuna eccezione lanciata. 
+	Per gli altri due esiti attesi, ci si aspetta che per il mocked bolt, venga invocato il metodo prepare \underline{al più} una
+	volta.
+	Questo perchè il metodo prepare() del bolt può essere invocato in qualsiasi punto della fase di preparazione del
+	WindowedBoltExecutor (prima o dopo la validazione dei parametri, ad esempio), permettendo, opportunamente, al bolt, di
+	verificare l'environment in cui si trova.
+	Un solo test è fallito (config valida, topology context valida e output collector invalida): ci si aspettava lancio di 
+	IllegalArgumentException ma il metodo termina come previsto.
+	I metodi testati con una topology context invalida, vengono commentati e non fatti eseguire, non vengono conteggiati nella
+	reliability perchè si verifica una NullPointerException all'interno del costruttore di TopologyContext: l'errore non è dovuto
+	dal metodo prepare di WindowedBoltExecutor
+	
+	\textbf{Per il metodo execute}: in tabella 
+	\ref{\gettablelabel{ceq}{execute}{WindowedBoltExecutor}{1}{\storm}},
+	\ref{\gettablelabel{bv}{execute}{WindowedBoltExecutor}{1}{\storm}} e 
+	\ref{\gettablelabel{testc}{execute}{WindowedBoltExecutor}{1}{\storm}} sono presenti
+	classi d'equivalenza, boundary values e test cases individuati. 
+	La classe d'eq. \ceq{tupla} indica una qualsiasi tupla - il metodo execute le inoltra al bolt (chiamando la sua 
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/topology/IWindowedBolt.html#execute(org.apache.storm.windowing.TupleWindow)}
+	{execute}),
+	ma non c'è una validazione
+	della tupla da parte di WindowedBoltExecutor: non è possibile individuare una "tupla invalida" - al massimo il bolt
+	può effettuare una validazione su informazioni di suo interesse che la tupla dovrebbe trasportare, ma non riguarda
+	WindowedBoltExecutor.
+	Nei boundary values, vengono indicati i campi più importanti al fine di creare la tupla (fields e values associati).
+	La notazione \textit{makeTuple(k)} nei test cases, nell'input, indica la costruzione di istanza di 
+	Tuple come indicato nel boundary value.
+	Per i test cases: prima dell'esecuzione di WindowedBoltExecutor.execute con l'input indicato, viene eseguito lo stesso
+	metodo (in un metodo con annotazione \textit{@Before}) con le tuple indicate nella motivazione: in particolare, se la
+	motivazione \textit{"Pre-esecuzione del bolt su tuple: $\{o(123),o(456),o(789)\}$"}, questo sta a indicare un loop nel metodo
+	annotato con before nella quale viene eseguito WindowedBoltExecutor.execute per ogni tupla indicata nella motivazione.
+	La notazione $o(k)$ indica l'istanza di un oggetto Tuple con un campo identificativo (chimato "id") al quale viene assegnato
+	il valore $k$, utile per distinguere le tuple in fase di verifica.
+	L'esito atteso \textit{"RuntimeException viene lanciata"} indica che ci si aspetta una qualsiasi unchecked exception.
+	L'esito atteso \textit{"Nessuna tupla di finestre"} indica che il risultato dell'esecuzione finale di 
+	WindowedBoltExecutor.execute non provoca alcuna invocazione di execute del bolt mocked: quando WindowedBoltExecutor effettua
+	sliding della finestra di tuple, questa viene inoltrata al bolt (che ricordiamo, è mocked) che può procedere al processamento.
+	Essendo il bolt mocked, si possono registrare le window tuples che gli vengono inoltrate ogni volta che il metodo execute
+	del bolt viene invocato da WindowedBoltExecutor. Essendo che il metodo execute di WindowedBoltExecutor viene eseguito 
+	molteplici volte prima di arrivare all'invocazione "di test", può darsi, a seconda del caso di test, 
+	che execute di WindowedBoltExecutor invochi molteplici volte execute del Bolt, permettendo l'accumulo delle TupleWindow da
+	verificare.
+	
+	L'esito atteso \textit{"Una finestra di tuple: $(o(123),o(456),o(789),o(912))$"} indica la presenza, dopo l'esecuzione
+	di WindowedBoltExecutor.execute "di test" (con la tupla corrispondente indicata nell'input), di esattamente una TupleWindow
+	con quelle tuple, in quell'ordinamento. Il numero di invocazioni del metodo execute del Bolt deve essere pari al numero di
+	TupleWindows. La verifica sull'uguaglianza delle tuple, rispetto a quanto ci si aspetta è effettuato sull'ID, 
+	che è un campo definito dall'utente (in questo caso, da noi).
+	
+	L'esito atteso \textit{"Due finestre di tuple: $(o(123),o(456),o(789),o(912)),(o(345),o(678),o(891),o(234))$"} è uguale
+	al precedente, solo che bisogna accertarsi che il metodo execute del bolt venga eseguito due volte, il numero di 
+	TupleWindows registrate al momento dell'invocazione di WindowedBoltExecutor.execute di test (con il parametro specificato
+	in input) sia esattamente 2 e iterativamente, per ogni TupleWindow, verificare le singole tuple rispetto a quanto ci si
+	aspetta, come indicato sopra.
+	
+	Stessa cosa vale per \textit{"Tre finestre di tuple: \dots"}
+	
+	E' stato utilizzato Mockito per mockare un BaseWindowedBolt (e verify, con i matcher per verificare invocazioni di
+	prepare/execute del bolt) e per mockare OutputCollector, TopologyContext.
+	
+	\subsubsection{Seconda iterazione}
+	
+	In tabella \ref{\getreltablelabel{WindowedBoltExecutor}{\storm}} è presente la reliability
+	
 	\newpage
 	\section{Link ai repository}
 	\begin{itemize}
@@ -2687,6 +2795,8 @@
 				{\methodcfcovcaption{scanEvents e onTrigger}{WindowManager}{2}{\storm}}
 		
 	
+	\newpage
+	
 	\reltable{WindowManager}{\storm}{
 			\tcell{getSlidingCount\\Timestamps} &
 			\tcell{$30$} &
@@ -2725,5 +2835,259 @@
 			\tcell{$1$}
 		\newtrow
 	}
+	
+	%
+	% Iter: 1, Class: WindowedBoltExecutor, Project: Storm
+	%
+	
+	\ceqtable{prepare}{WindowedBoltExecutor}{1}{\storm}{
+			\tcell{topoConf} &
+			\tcell{\ceq{null}\\\ceq{config invalida (no len. win.)}\\\ceq{config valida}}
+		\newtrow
+			\tcell{context} &
+			\tcell{\ceq{null}\\\ceq{context invalido}\\\ceq{context valido}}
+		\newtrow
+			\tcell{collector} &
+			\tcell{\ceq{null}\\\ceq{collector invalido}\\\ceq{collector valido}}
+		\newtrow
+	}
+	
+	\bvtable{prepare}{WindowedBoltExecutor}{1}{\storm}{
+			\tcell{topoConf} &
+			\tcell{\ceq{null}} &
+			\tcell{null}
+		\newtrow
+			\tcell{topoConf} &
+			\tcell{\ceq{config invalida\\ (no len. win.)}} &
+			\tcell{Map\{\}}
+		\newtrow
+			\tcell{topoConf} &
+			\tcell{\ceq{config valida}} &
+			\tcell{Map\{\\\;\;(TOPOLOGY\_BOLTS\_WINDOW\_LENGTH\_COUNT, 4),\\\;\;(TOPOLOGY\_BOLTS\_SLIDING\_INTERVAL\_COUNT, 4)\\\}}
+		\newtrow
+			\tcell{context} &
+			\tcell{\ceq{null}} &
+			\tcell{null}
+		\newtrow
+			\tcell{context} &
+			\tcell{\ceq{context valido}} &
+			\tcell{mock(TopologyContext.class)}
+		\newtrow
+			\tcell{context} &
+			\tcell{\ceq{context invalido}} &
+			\tcell{new TopologyContext(null,\dots,null)}
+		\newtrow
+			\tcell{collector} &
+			\tcell{\ceq{null}} &
+			\tcell{null}
+		\newtrow
+			\tcell{collector} &
+			\tcell{\ceq{collector invalido}} &
+			\tcell{new OutputCollector(null)}
+		\newtrow
+			\tcell{collector} &
+			\tcell{\ceq{collector valido}} &
+			\tcell{new OutputCollector(new IOutputCollector() \{\\\;\;@Override public List<Integer> emit(\dots\\\})}
+		\newtrow
+	}
+	
+	\newpage
+	
+	\testctable{prepare}{WindowedBoltExecutor}{1}{\storm}{
+			\tcell{null,\\null,\\null} &
+			\tcell{RuntimeException viene lanciata} &
+			\tcell{Ci si può aspettare una\\ unchecked exception, non viene\\ specificata nella documentazione}
+		\newtrow
+			\tcell{null,\\null,\\validOutputCollector()} &
+			\tcell{RuntimeException viene lanciata} &
+			\tcell{Ci si può aspettare una\\ unchecked exception, non viene\\ specificata nella documentazione}
+		\newtrow
+			\tcell{null,\\null,\\invalidOutputCollector()} &
+			\tcell{RuntimeException viene lanciata} &
+			\tcell{Ci si può aspettare una\\ unchecked exception, non viene\\ specificata nella documentazione}
+		\newtrow
+			\tcell{null,\\makeTopologyContext(),\\null} &
+			\tcell{RuntimeException viene lanciata} &
+			\tcell{Ci si può aspettare una\\ unchecked exception, non viene\\ specificata nella documentazione}
+		\newtrow
+			\tcell{null,\\makeTopologyContext(),\\validOutputCollector()} &
+			\tcell{RuntimeException viene lanciata} &
+			\tcell{Ci si può aspettare una\\ unchecked exception, non viene\\ specificata nella documentazione}
+		\newtrow
+			\tcell{null,\\makeTopologyContext(),\\invalidOutputCollector()} &
+			\tcell{RuntimeException viene lanciata} &
+			\tcell{Ci si può aspettare una\\ unchecked exception, non viene\\ specificata nella documentazione}
+		\newtrow
+			\tcell{null,\\invalidTopologyContext(),\\null} &
+			\tcell{RuntimeException viene lanciata} &
+			\tcell{Ci si può aspettare una\\ unchecked exception, non viene\\ specificata nella documentazione}
+		\newtrow
+			\tcell{null,\\invalidTopologyContext(),\\validOutputCollector()} &
+			\tcell{RuntimeException viene lanciata} &
+			\tcell{Ci si può aspettare una\\ unchecked exception, non viene\\ specificata nella documentazione}
+		\newtrow
+			\tcell{null,\\invalidTopologyContext(),\\invalidOutputCollector()} &
+			\tcell{RuntimeException viene lanciata} &
+			\tcell{Ci si può aspettare una\\ unchecked exception, non viene\\ specificata nella documentazione}
+		\newtrow
+			\tcell{invalidConfig(),\\null,\\null} &
+			\tcell{RuntimeException viene lanciata} &
+			\tcell{Ci si può aspettare una\\ unchecked exception, non viene\\ specificata nella documentazione}
+		\newtrow
+			\tcell{invalidConfig(),\\null,\\validOutputCollector()} &
+			\tcell{RuntimeException viene lanciata} &
+			\tcell{Ci si può aspettare una\\ unchecked exception, non viene\\ specificata nella documentazione}
+		\newtrow
+			\tcell{invalidConfig(),\\null\\invalidOutputCollector()} &
+			\tcell{RuntimeException viene lanciata} &
+			\tcell{Ci si può aspettare una\\ unchecked exception, non viene\\ specificata nella documentazione}
+		\newtrow
+			\tcell{invalidConfig(),\\makeTopologyContext(),\\null} &
+			\tcell{RuntimeException viene lanciata} &
+			\tcell{Ci si può aspettare una\\ unchecked exception, non viene\\ specificata nella documentazione}
+		\newtrow
+			\tcell{invalidConfig(),\\makeTopologyContext(),\\validOutputCollector()} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{Nessuno degli argomenti è null\\ e vengono esplicitamente indicati\\param invalidi}
+		\newtrow
+			\tcell{invalidConfig(),\\makeTopologyContext(),\\invalidOutputCollector()} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{Nessuno degli argomenti è null\\ e vengono esplicitamente indicati\\param invalidi}
+		\newtrow
+			\tcell{invalidConfig(),\\invalidTopologyContext(),\\null} &
+			\tcell{RuntimeException viene lanciata} &
+			\tcell{Ci si può aspettare una\\ unchecked exception, non viene\\ specificata nella documentazione}
+		\newtrow
+			\tcell{invalidConfig(),\\invalidTopologyContext(),\\validOutputCollector()} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{Nessuno degli argomenti è null\\ e vengono esplicitamente indicati\\param invalidi}
+		\newtrow
+			\tcell{invalidConfig(),\\invalidTopologyContext(),\\invalidOutputCollector()} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{Nessuno degli argomenti è null\\ e vengono esplicitamente indicati\\param invalidi}
+		\newtrow
+			\tcell{validConfig(),\\null,\\null} &
+			\tcell{RuntimeException viene lanciata} &
+			\tcell{Ci si può aspettare una\\ unchecked exception, non viene\\ specificata nella documentazione}
+		\newtrow
+			\tcell{validConfig(),\\null,\\validOutputCollector()} &
+			\tcell{RuntimeException viene lanciata} &
+			\tcell{Ci si può aspettare una\\ unchecked exception, non viene\\ specificata nella documentazione}
+		\newtrow
+			\tcell{validConfig(),\\null,\\invalidOutputCollector()} &
+			\tcell{RuntimeException viene lanciata} &
+			\tcell{Ci si può aspettare una\\ unchecked exception, non viene\\ specificata nella documentazione}
+		\newtrow
+			\tcell{validConfig(),\\makeTopologyContext(),\\null} &
+			\tcell{RuntimeException viene lanciata} &
+			\tcell{Ci si può aspettare una\\ unchecked exception, non viene\\ specificata nella documentazione}
+		\newtrow
+			\tcell{validConfig(),\\makeTopologyContext(),\\validOutputCollector()} &
+			\tcell{Terminazione con successo} &
+			\tcell{Il metodo non solleva eccezioni,\\il metodo prepare() del bolt\\viene invocato}
+		\newtrow
+			\tcell{validConfig(),\\makeTopologyContext()\\invalidOutputCollector()} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{Nessuno degli argomenti è null\\ e vengono esplicitamente indicati\\param invalidi}
+		\newtrow
+			\tcell{validConfig(),\\invalidTopologyContext(),\\null} &
+			\tcell{RuntimeException viene lanciata} &
+			\tcell{Ci si può aspettare una\\ unchecked exception, non viene\\ specificata nella documentazione}
+		\newtrow
+			\tcell{validConfig(),\\invalidTopologyContext(),\\validOutputCollector()} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{Nessuno degli argomenti è null\\ e vengono esplicitamente indicati\\param invalidi}
+		\newtrow
+			\tcell{validConfig(),\\invalidTopologyContext()\\invalidOutputCollector()} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{Nessuno degli argomenti è null\\ e vengono esplicitamente indicati\\param invalidi}
+		\newtrow
+	}
+	
+	\ceqtable{execute}{WindowedBoltExecutor}{1}{\storm}{
+			\tcell{input} &
+			\tcell{\ceq{null}\\\ceq{tupla}}
+		\newtrow
+	}
+	
+	\bvtable{execute}{WindowedBoltExecutor}{1}{\storm}{
+			\tcell{input} &
+			\tcell{\ceq{null}} &
+			\tcell{null}
+		\newtrow
+			\tcell{input} &
+			\tcell{\ceq{tupla}} &
+			\tcell{new TupleImpl(\\\;new GeneralTopologyContext(\dots, fields),\\\;values, \dots)}
+		\newtrow
+	}
+	
+	\testctable{execute}{WindowedBoltExecutor}{1}{\storm}{
+			\tcell{null} &
+			\tcell{RuntimeException viene lanciata} &
+			\tcell{} 
+		\newtrow
+			\tcell{makeTuple(123)} &
+			\tcell{Nessuna tupla di finestre} &
+			\tcell{Nessun pre-esecuzione del bolt\\ su una tupla} 
+		\newtrow
+			\tcell{makeTuple(456)} &
+			\tcell{Nessuna tupla di finestre} &
+			\tcell{Pre-esecuzione del bolt su tupla\\$\{o(123)\}$} 
+		\newtrow
+			\tcell{makeTuple(789)} &
+			\tcell{Nessuna tupla di finestre} &
+			\tcell{Pre-esecuzione del bolt su tuple\\$\{o(123),o(456)\}$} 
+		\newtrow
+			\tcell{makeTuple(912)} &
+			\tcell{Una finestra di tuple:\\$(o(123),o(456),o(789),o(912))$} &
+			\tcell{Pre-esecuzione del bolt su tuple\\$\{o(123),o(456),o(789)\}$} 
+		\newtrow
+			\tcell{makeTuple(345)} &
+			\tcell{Una finestra di tuple:\\$(o(123),o(456),o(789),o(912))$} &
+			\tcell{Pre-esecuzione del bolt su tuple\\$\{o(123),o(456),o(789),o(912)\}$} 
+		\newtrow
+			\tcell{makeTuple(678)} &
+			\tcell{Una finestra di tuple:\\$(o(123),o(456),o(789),o(912))$} &
+			\tcell{Pre-esecuzione del bolt su tuple\\$\{o(123),o(456),o(789),o(912),$\\$o(345)\}$} 
+		\newtrow
+			\tcell{makeTuple(891)} &
+			\tcell{Una finestra di tuple:\\$(o(123),o(456),o(789),o(912))$} &
+			\tcell{Pre-esecuzione del bolt su tuple\\$\{o(123),o(456),o(789),o(912),$\\$o(345),o(678)\}$} 
+		\newtrow
+			\tcell{makeTuple(234)} &
+			\tcell{Due finestre di tuple:
+				\\$(o(123),o(456),o(789),o(912)),$\\$(o(345),o(678),o(891),o(234))$} &
+			\tcell{Pre-esecuzione del bolt su tuple\\$\{o(123),o(456),o(789),o(912),$\\$o(345),o(678),o(891)\}$} 
+		\newtrow
+			\tcell{makeTuple(678)} &
+			\tcell{Tre finestre di tuple:
+				\\$(o(123),o(456),o(789),o(912)),$\\$(o(345),o(678),o(891),o(234)),$\\
+				$(o(567),o(891),o(235),o(678))$} &
+			\tcell{Pre-esecuzione del bolt su tuple\\$\{o(123),o(456),o(789),o(912),$\\$o(345),o(678),o(891),o(234),$\\
+				$o(567),o(891),o(235)\}$} 
+		\newtrow
+	}
+	
+	\reltable{WindowedBoltExecutor}{\storm} {
+			\tcell{prepare} &
+			\tcell{$18$} &
+			\tcell{$17$} &
+			\tcell{$1$} &
+			\tcell{
+				tabella $\ref{\gettablelabel{testc}{prepare}{WindowedBoltExecutor}{1}{\storm}}$} &
+			\tcell{\unifdist{0.055}} &
+			\tcell{$0.945$}
+		\newtrow
+			\tcell{execute} &
+			\tcell{$?$} &
+			\tcell{$?$} &
+			\tcell{$?$} &
+			\tcell{
+				tabella $?$} &
+			\tcell{\unifdist{?}} &
+			\tcell{$?$}
+		\newtrow
+	}
+	
 	
 \end{document}
