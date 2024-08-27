@@ -1137,7 +1137,9 @@
 	(ridotti comunque a noops). Nei boundary values, la notazione \textit{"Map\{\}"} indica la creazione di una 
 	Map<String,Object> vuota
 	(a livello implementativo, è una HashMap<String,Object>), mentre con la stessa notazione, ma con le tuple: 
-	\textit{"Map\{(TOPOLOGY\_\dots,4)\}"} si intende la creazione di una Map<String,Object> e l'aggiunta di coppie chiave-valore con il metodo put
+	\textit{"Map\{(TOPOLOGY\_\dots,4)\}"} (chiavi di configurazione documentate 
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/Config.html}{qui}) 
+	si intende la creazione di una Map<String,Object> e l'aggiunta di coppie chiave-valore con il metodo put
 	dell'interfaccia java.util.Map. Nei test cases, validOutputCollector, invalidOutputCollector, \dots indicano la creazione di
 	oggetti come specificato sopra.
 	E' stato utilizzato un approccio multidimensionale alla generazione dei test.
@@ -1210,6 +1212,14 @@
 	
 	E' stato utilizzato Mockito per mockare un BaseWindowedBolt (e verify, con i matcher per verificare invocazioni di
 	prepare/execute del bolt) e per mockare OutputCollector, TopologyContext.
+	
+	Dalla figura \ref{\getpicturelabel{storm/controlflow-WindowedBoltExecutor-1}} alla figura 
+	\ref{\getpicturelabel{storm/dataflow-execute-WindowedBoltExecutor-1}} sono presenti le metriche di adeguatezza 
+	raggiunte in questa iterazione. La dataflow coverage del metodo prepare non è stata mostrata da badua e quindi
+	non viene inclusa. La stmt. e branch cov. della classe sono del 42\% e 33\%, per il metodo execute, le stesse metriche sono:
+	14\%, 16\%, mentre per prepare 100\%, n/a (non ci sono branch in prepare). Per la classe, la mutation coverage è del 40\%,
+	test strength del 77\% e line coverage 50\%. A livello di metodo, 2 mutanti killed su 5 per execute, 3 su 3 per prepare.
+	La dataflow coverage di execute è di 4 coperture di coppie def-use su 35 totali.
 	
 	\subsubsection{Seconda iterazione}
 	
@@ -2793,7 +2803,6 @@
 				
 	\makepicture{17cm}{1.25cm}{storm/controlflow-missingmethods-WindowManager-2}
 				{\methodcfcovcaption{scanEvents e onTrigger}{WindowManager}{2}{\storm}}
-		
 	
 	\newpage
 	
@@ -3067,6 +3076,27 @@
 				$o(567),o(891),o(235)\}$} 
 		\newtrow
 	}
+	
+	\makepicture{18cm}{0.75cm}{storm/controlflow-WindowedBoltExecutor-1}
+				{\classcfcovcaption{WindowedBoltExecutor}{1}{\storm}}
+				
+	\makepicture{18cm}{0.5cm}{storm/controlflow-execute-WindowedBoltExecutor-1}
+				{\methodcfcovcaption{execute}{WindowedBoltExecutor}{1}{\storm}}
+				
+	\makepicture{18cm}{0.5cm}{storm/controlflow-prepare-WindowedBoltExecutor-1}
+				{\methodcfcovcaption{add}{WindowedBoltExecutor}{1}{\storm}}
+				
+	\makepicture{17cm}{1.5cm}{storm/mutation-WindowedBoltExecutor-1}
+				{\mutclasscaption{WindowedBoltExecutor}{1}{\storm}}
+				
+	\makepicture{16.5cm}{8cm}{storm/mutation-execute-WindowedBoltExecutor-1}
+				{\mutmethodcaption{execute}{WindowedBoltExecutor}{1}{\storm}{2}{5}}
+	
+	\makepicture{17cm}{8cm}{storm/mutation-prepare-WindowedBoltExecutor-1}
+				{\mutmethodcaption{add}{WindowedBoltExecutor}{1}{\storm}{3}{3}}
+				
+	\makepicture{15cm}{13cm}{storm/dataflow-execute-WindowedBoltExecutor-1}
+				{\alldfcovcaption{execute}{WindowedBoltExecutor}{1}{\storm}}
 	
 	\reltable{WindowedBoltExecutor}{\storm} {
 			\tcell{prepare} &
