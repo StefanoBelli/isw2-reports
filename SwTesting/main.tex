@@ -1129,8 +1129,8 @@
 	\ref{\gettablelabel{ceq}{prepare}{WindowedBoltExecutor}{1}{\storm}},
 	\ref{\gettablelabel{bv}{prepare}{WindowedBoltExecutor}{1}{\storm}} e 
 	\ref{\gettablelabel{testc}{prepare}{WindowedBoltExecutor}{1}{\storm}} sono presenti le classi d'equivalenza, boundary values
-	e test cases individuati. Nelle classi d'eq.: la \ceq{config invalida} è quella che non specifica la lunghezza della lunghezza
-	della finestra (quella valida, al contrario, si), il \ceq{context invalido} è l'oggetto TopologyContext i cui argomenti del
+	e test cases individuati. Nelle classi d'eq.: la \ceq{config invalida} è vuota (non ha impostato i parametri di configurazione 
+	della finestra), il \ceq{context invalido} è l'oggetto TopologyContext i cui argomenti del
 	costruttore sono tutti nulls, il \ceq{context valido} è un oggetto TopologyContext mocked, mentre per \ceq{collector invalido},
 	è un OutputCollector con delegate null (metodi di gestione eventi dall'OutputCollector), mentre \ceq{collector valido} è
 	l'OutputCollector con una classe che implementa l'interfaccia IOutputCollector e effettua l'override dei metodi astratti
@@ -1194,16 +1194,18 @@
 	del bolt viene invocato da WindowedBoltExecutor. Essendo che il metodo execute di WindowedBoltExecutor viene eseguito 
 	molteplici volte prima di arrivare all'invocazione "di test", può darsi, a seconda del caso di test, 
 	che execute di WindowedBoltExecutor invochi molteplici volte execute del Bolt, permettendo l'accumulo delle TupleWindow da
-	verificare.
+	verificare (il mock del metodo execute del bolt aggiunge le TupleWindow ricevute in una lista di TupleWindow che verrà poi
+	verificata rispetto alle TupleWindows che ci si aspetta siano presenti).
 	
 	L'esito atteso \textit{"Una finestra di tuple: $(o(123),o(456),o(789),o(912))$"} indica la presenza, dopo l'esecuzione
-	di WindowedBoltExecutor.execute "di test" (con la tupla corrispondente indicata nell'input), di esattamente una TupleWindow
+	di WindowedBoltExecutor.execute "di test" (con la tupla corrispondente indicata nell'input), 
+	di esattamente una TupleWindow nella lista,
 	con quelle tuple, in quell'ordinamento. Il numero di invocazioni del metodo execute del Bolt deve essere pari al numero di
 	TupleWindows. La verifica sull'uguaglianza delle tuple, rispetto a quanto ci si aspetta è effettuato sull'ID, 
 	che è un campo definito dall'utente (in questo caso, da noi).
 	
 	L'esito atteso \textit{"Due finestre di tuple: $(o(123),o(456),o(789),o(912)),(o(345),o(678),o(891),o(234))$"} è uguale
-	al precedente, solo che bisogna accertarsi che il metodo execute del bolt venga eseguito due volte, il numero di 
+	al precedente, solo che bisogna accertarsi che il metodo execute del bolt venga eseguito due volte, ovvero il numero di 
 	TupleWindows registrate al momento dell'invocazione di WindowedBoltExecutor.execute di test (con il parametro specificato
 	in input) sia esattamente 2 e iterativamente, per ogni TupleWindow, verificare le singole tuple rispetto a quanto ci si
 	aspetta, come indicato sopra.
@@ -1212,6 +1214,8 @@
 	
 	E' stato utilizzato Mockito per mockare un BaseWindowedBolt (e verify, con i matcher per verificare invocazioni di
 	prepare/execute del bolt) e per mockare OutputCollector, TopologyContext.
+	
+	Solo il primo test è fallito: una RuntimeException non viene mai lanciata.
 	
 	Dalla figura \ref{\getpicturelabel{storm/controlflow-WindowedBoltExecutor-1}} alla figura 
 	\ref{\getpicturelabel{storm/dataflow-execute-WindowedBoltExecutor-1}} sono presenti le metriche di adeguatezza 
@@ -1222,6 +1226,35 @@
 	La dataflow coverage di execute è di 4 coperture di coppie def-use su 35 totali.
 	
 	\subsubsection{Seconda iterazione}
+	Si osserva, dalla pagina HTML di JaCoCo, come vi sia scarsa copertura del metodo validate, utilizzato per, appunto,
+	validare le configurazioni per il WindowedBoltExecutor.
+	
+	Si vogliono aumentare le metriche relative a stmt. coverage e branch coverage dell'intera classe.
+	
+	Facendo riferimento alla classe \href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/Config.html}{Config}
+	che mantiene tutte le chiavi di configurazione e la relativa documentazione, aggiungiamo test case per prepare.
+	
+	\textbf{Estensione casi di test metodo prepare}: sono di interesse le seguenti chiave di configurazione da impostare
+	nella Map<String,Object> da passare a prepare:
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/Config.html#TOPOLOGY_MESSAGE_TIMEOUT_SECS}
+	{TOPOLOGY\_MESSAGE\_TIMEOUT\_SECS},
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/Config.html#TOPOLOGY_MAX_SPOUT_PENDING}
+	{TOPOLOGY\_MAX\_SPOUT\_PENDING},
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/Config.html#TOPOLOGY_BOLTS_WINDOW_LENGTH_DURATION_MS}
+	{TOPOLOGY\_BOLTS\_WINDOW\_LENGTH\_DURATION\_MS},
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/Config.html#TOPOLOGY_BOLTS_WINDOW_LENGTH_COUNT}
+	{TOPOLOGY\_BOLTS\_WINDOW\_LENGTH\_COUNT},
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/Config.html#TOPOLOGY_BOLTS_SLIDING_INTERVAL_DURATION_MS}
+	{TOPOLOGY\_BOLTS\_SLIDING\_INTERVAL\_DURATION\_MS},
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/Config.html#TOPOLOGY_BOLTS_SLIDING_INTERVAL_COUNT}
+	{TOPOLOGY\_BOLTS\_SLIDING\_INTERVAL\_COUNT}
+	
+	In figura \ref{\getpicturelabel{storm/controlflow-WindowedBoltExecutor-2}} è evidente un netto miglioramento della stmt. e
+	branch coverage della classe (risp. 59\%, 55\%), mentre in figura \ref{\getpicturelabel{storm/mutation-WindowedBoltExecutor-2}} si osserva
+	un miglioramento della strength della test suite (lncov: 62\%, mutcov: 57\%, test str.: 87\%).
+	
+	In figura \ref{\getpicturelabel{storm/controlflow-validate-WindowedBoltExecutor-2}} si osserva il miglioramento della 
+	copertura del metodo di validazione utilizzato (indirettamente) da prepare.
 	
 	In tabella \ref{\getreltablelabel{WindowedBoltExecutor}{\storm}} è presente la reliability
 	
@@ -2851,7 +2884,7 @@
 	
 	\ceqtable{prepare}{WindowedBoltExecutor}{1}{\storm}{
 			\tcell{topoConf} &
-			\tcell{\ceq{null}\\\ceq{config invalida (no len. win.)}\\\ceq{config valida}}
+			\tcell{\ceq{null}\\\ceq{config invalida}\\\ceq{config valida}}
 		\newtrow
 			\tcell{context} &
 			\tcell{\ceq{null}\\\ceq{context invalido}\\\ceq{context valido}}
@@ -2867,7 +2900,7 @@
 			\tcell{null}
 		\newtrow
 			\tcell{topoConf} &
-			\tcell{\ceq{config invalida\\ (no len. win.)}} &
+			\tcell{\ceq{config invalida}} &
 			\tcell{Map\{\}}
 		\newtrow
 			\tcell{topoConf} &
@@ -3097,25 +3130,69 @@
 				
 	\makepicture{15cm}{13cm}{storm/dataflow-execute-WindowedBoltExecutor-1}
 				{\alldfcovcaption{execute}{WindowedBoltExecutor}{1}{\storm}}
+				
+	\makepicture{17cm}{9cm}{storm/second-iter-WindowedBoltExecutor-reason}
+				{Copertura validazione configurazione scarsa}
+				
+	\testctable{prepare}{WindowedBoltExecutor}{2}{\storm}{
+			\tcell{validWinLenCount()\\makeTopologyContext()\\validOutputCollector()} &
+			\tcell{Terminazione con successo} &
+			\tcell{La configurazione è valida}
+		\newtrow
+			\tcell{invalidWinLenCount()\\makeTopologyContext()\\validOutputCollector()} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{La configurazione è invalida}
+		\newtrow
+			\tcell{validWinLenDuration()\\makeTopologyContext()\\validOutputCollector()} &
+			\tcell{Terminazione con successo} &
+			\tcell{La configurazione è valida}
+		\newtrow
+			\tcell{invalidWinLenDuration()\\makeTopologyContext()\\validOutputCollector()} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{La configurazione è invalida}
+		\newtrow
+			\tcell{validBothWinLenAnd\\SlidIntvlDuration()\\makeTopologyContext()\\validOutputCollector()} &
+			\tcell{Terminazione con successo} &
+			\tcell{La configurazione è valida}
+		\newtrow
+			\tcell{invalidBothWinLenAnd\\SlidIntvlDuration()\\makeTopologyContext()\\validOutputCollector()} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{La configurazione è invalida}
+		\newtrow
+			\tcell{invalidBothWinLenAnd\\SlidIntvlCount()\\makeTopologyContext()\\validOutputCollector()} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{La configurazione è invalida}
+		\newtrow
+	}
+		
+	\makepicture{18cm}{0.75cm}{storm/controlflow-WindowedBoltExecutor-2}
+				{\classcfcovcaption{WindowedBoltExecutor}{2}{\storm}}
+				
+	\makepicture{17cm}{8cm}{storm/controlflow-validate-WindowedBoltExecutor-2}
+				{\methodcfcovcaption{validate}{WindowedBoltExecutor}{2}{\storm}}
+				
+	\makepicture{17cm}{1.5cm}{storm/mutation-WindowedBoltExecutor-2}
+				{\mutclasscaption{WindowedBoltExecutor}{2}{\storm}}
 	
 	\reltable{WindowedBoltExecutor}{\storm} {
 			\tcell{prepare} &
-			\tcell{$18$} &
-			\tcell{$17$} &
+			\tcell{$25$} &
+			\tcell{$24$} &
 			\tcell{$1$} &
 			\tcell{
-				tabella $\ref{\gettablelabel{testc}{prepare}{WindowedBoltExecutor}{1}{\storm}}$} &
-			\tcell{\unifdist{0.055}} &
-			\tcell{$0.945$}
+				tabella $\ref{\gettablelabel{testc}{prepare}{WindowedBoltExecutor}{1}{\storm}}$,
+				tabella $\ref{\gettablelabel{testc}{prepare}{WindowedBoltExecutor}{2}{\storm}}$} &
+			\tcell{\unifdist{0.04}} &
+			\tcell{$0.96$}
 		\newtrow
 			\tcell{execute} &
-			\tcell{$?$} &
-			\tcell{$?$} &
-			\tcell{$?$} &
+			\tcell{$10$} &
+			\tcell{$9$} &
+			\tcell{$1$} &
 			\tcell{
-				tabella $?$} &
-			\tcell{\unifdist{?}} &
-			\tcell{$?$}
+				tabella $\ref{\gettablelabel{testc}{execute}{WindowedBoltExecutor}{1}{\storm}}$} &
+			\tcell{\unifdist{0.1}} &
+			\tcell{$0.9$}
 		\newtrow
 	}
 	
