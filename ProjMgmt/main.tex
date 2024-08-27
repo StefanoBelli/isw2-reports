@@ -339,7 +339,7 @@
 	La \underline{valutazione} viene effettuata tramite l'ausilio 4 metriche: 
 	\textbf{F1-score} 
 	(media armonica tra precision e recall, il cui valore sta nel range $[0,1]$: 
-	è 1 se lo sono sia precision che recall, è 0 alla stessa condizione),
+	è 1 se lo sono sia precision che recall, è 0 alla condizione che lo siano sia precision che recall),
 	\textbf{Kappa}, \textbf{AUC}, 
 	\textbf{NPofB20} (percentuale di bug che
 	possono essere trovati analizzando il top 20\% di LOC. Il ranking, per definire
@@ -355,13 +355,15 @@
 \begin{frame}
 	\frametitle{Evaluation con walk forward}
 	
-	\fontsize{9pt}{10pt}\selectfont
+	\fontsize{8pt}{10pt}\selectfont
 	
 	Lo strumento utilizzato per valutare le prestazioni dei classificatori (con o senza tecniche) è
 	una tecnica di tipo time-series: walk forward.
 	
 	\begin{itemize}
-		\item Nella figura sottostante è presente un esempio di esecuzione dell'evaluation.
+		\item Nella figura sottostante è presente un esempio di esecuzione dell'evaluation: ogni cella,
+		rappresenta i dati relativi alla release $i-$esima (dove $i$ è la colonna di appartenenza) 
+		e la colorazione indica la split che viene attuata alla $j-$esima iterazione (dove $j$ è la riga)
 	
 		\item Nel nostro caso, la prima run, non viene effettuata a prescindere dato che non abbiamo un training set con cui addestrare
 		un classificatore e quindi viene ritenuta inutile.
@@ -369,6 +371,7 @@
 		(2 training rels. + 1 testing rel), 
 		mentre le run per Storm partono dalla run 4 (3 training rels.  + 1 testing rel.)
 		\begin{itemize}
+			\fontsize{7pt}{10pt}\selectfont
 			\item Essendo una tecnica time-series, i dati disponibili fino alle release di training non rivelano
 			alcuna classe buggy, impedendo l'addestramento del classificatore
 		\end{itemize}
@@ -588,8 +591,8 @@
 		\item 
 		Non esiste una scelta migliore dell'altra, tuttavia, possiamo affermare che per BookKeeper una scelta
 		non da fare è sicuramente usare Naive Bayes e mentre IBk ottiene complessivamente metriche migliori, per
-		Random Forest si tende a registrare un costo più basso. Una eventuale scelta comunque, ricadrebbe su IBk,
-		con la sola applicazione di balancing (SMOTE), dato che l'F1-score è il migliore, 
+		Random Forest si tende a registrare un costo più basso. \textbf{Una eventuale scelta comunque, ricadrebbe su IBk,
+		con la sola applicazione di balancing (SMOTE)}, dato che l'F1-score è il migliore, 
 		mentre kappa e AUC non sono le
 		migliori, ma nemmeno le peggiori (si preferisce un F1-score più alto).
 		La scelta di IBk con la sola applicazione di SMOTE è confermata da NPofB20.
@@ -602,8 +605,8 @@
 		con la configurazione:
 		feature selection (best first backward), niente balancing e cost sensitivity (sensitive learning).
 		Mantenendo la preferenza per un F1-score alto, ma anche tenendo in considerazione kappa, AUC e costi,
-		conviene sicuramente utilizzare IBk con feature selection (best first backward), no balancing e 
-		con cost sensitivity (sensitive learning), che rappresenta un buon compromesso per le metriche e il costo
+		\textbf{conviene sicuramente utilizzare IBk con feature selection (best first backward), no balancing e 
+		con cost sensitivity (sensitive learning)}, che rappresenta un buon compromesso per le metriche e il costo
 		considerati. 
 		NPofB20 tende a favorire Random forest (si feature selection, no balancing, no sens. learning),
 		ma AUC e Kappa e la poca differenza per l'F1-score, sposta l'ago della bilancia a favore di IBk con le
@@ -618,7 +621,6 @@
 	\begin{itemize}
 		\item Si assume che le informazioni prelevate da Jira siano affidabili
 		\item Le release e i ticket senza commit vengono scartati
-		\item La prima iterazione di walk forward non viene mai eseguita
 	\end{itemize}
 	
 \end{frame}
