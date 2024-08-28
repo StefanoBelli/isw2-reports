@@ -1290,7 +1290,6 @@
 	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/topology/TupleFieldTimestampExtractor.html}
 	{TupleFieldTimestampExtractor} 
 	con lo stesso nome del campo dell'iterazione precedente, in modo da non dover cambiare eccessivamente l'implementazione.
-		
 	
 	In figura \ref{\getpicturelabel{storm/controlflow-WindowedBoltExecutor-2}} è evidente un netto miglioramento della stmt. e
 	branch coverage della classe (risp. 73\%, 68\%), mentre in figura 
@@ -1304,16 +1303,33 @@
 	In figura \ref{\getpicturelabel{storm/controlflow-validate-WindowedBoltExecutor-2}} si osserva il miglioramento della 
 	copertura del metodo di validazione utilizzato (indirettamente) da prepare.
 	
-	In tabella \ref{\getreltablelabel{WindowedBoltExecutor}{\storm}} è presente la reliability
+	In tabella \ref{\getreltablelabel{WindowedBoltExecutor}{\storm}} è presente la reliability.
+	
+	\section{Integration test}
+	
+	L'integration test è stato effettuato con BookKeeper, in particolare la classe NetworkTopologyImpl, metodo 
+	\href{https://bookkeeper.apache.org/docs/latest/api/javadoc/org/apache/bookkeeper/net/NetworkTopologyImpl.html#isOnSameRack(org.apache.bookkeeper.net.Node,org.apache.bookkeeper.net.Node)}
+	{isOnSameRack}.
+	In tabella \ref{\gettablelabel{ceq}{isOnSameRack}{NetworkTopologyImpl}{integration test}{\bookkeeper}}, 
+	\ref{\gettablelabel{bv}{isOnSameRack}{NetworkTopologyImpl}{integration test}{\bookkeeper}} e
+	\ref{\gettablelabel{testc}{isOnSameRack}{NetworkTopologyImpl}{integration test}{\bookkeeper}} sono presenti
+	classi d'equivalenza, boundary values e test cases elaborati tramite approccio multidimensionale.
+	I test falliti sono i primi 7, e rivelano una gestione errata degli argomenti: IllegalArgumentException non viene mai
+	lanciata nonostante diversa indicazione sulla documentazione del metodo. 
+	I test falliti vengono disabilitati commentandoli.
+	La reliability stimata è 0.3, ma sempre secondo assunzione di profilo operazionale con distribuzione uniforme.
+	In figura \ref{\getpicturelabel{bk/failsafe-summary-it}} è presente il resoconto di Maven Failsafe.
+	
 	
 	\newpage
+	
 	\section{Link ai repository}
 	\begin{itemize}
 		\item BookKeeper: \url{https://github.com/StefanoBelli/bookkeeper}
 		\begin{itemize}
 			\item test localizzati in \textit{bookkeeper-server/src/test/java/\dots}
 			\item CI (build$\;\rightarrow\;$test$\;\rightarrow\;$adequacy$\;\rightarrow\;$
-			mutation$\;\rightarrow\;$report-packaging$\;\rightarrow\;$package-upload): 
+			mutation$\;\rightarrow\;$integration-test$\;\rightarrow\;$report-packaging$\;\rightarrow\;$package-upload): 
 			\url{https://github.com/StefanoBelli/bookkeeper/actions/workflows/ste-ci.yml} 
 			(tra gli artifact c'è adequacy-reports.zip per ogni build triggerata)
 		\end{itemize}
@@ -3281,5 +3297,90 @@
 		\newtrow
 	}
 	
+	%
+	% Integration test
+	%	
+	
+	\ceqtable{isOnSameRack}{NetworkTopologyImpl}{integration test}{\bookkeeper} {
+			\tcell{node1} &
+			\tcell{\ceq{null}\\\ceq{nodo non in rete}\\\ceq{nodo in rete}} 
+		\newtrow
+			\tcell{node2} &
+			\tcell{\ceq{null}\\\ceq{nodo non in rete}\\\ceq{nodo in rete}}
+		\newtrow
+	}
+	
+	\bvtable{isOnSameRack}{NetworkTopologyImpl}{integration test}{\bookkeeper} {
+			\tcell{node1} &
+			\tcell{\ceq{null}} &
+			\tcell{null}
+		\newtrow
+			\tcell{node1} &
+			\tcell{\ceq{nodo non in rete}} &
+			\tcell{Node(/europe/it/lazio/roma/rack-1/bookie-14")}
+		\newtrow
+			\tcell{node1} &
+			\tcell{\ceq{nodo in rete}} &
+			\tcell{Node(/europe/it/lazio/roma/rack-1/bookie-1")}
+		\newtrow
+			\tcell{node2} &
+			\tcell{\ceq{null}} &
+			\tcell{null}
+		\newtrow
+			\tcell{node2} &
+			\tcell{\ceq{nodo non in rete}} &
+			\tcell{Node(/europe/it/lazio/roma/rack-1/bookie-14")}
+		\newtrow
+			\tcell{node2} &
+			\tcell{\ceq{nodo in rete}} &
+			\tcell{Node(/europe/it/lazio/roma/rack-1/bookie-1")}
+		\newtrow
+	}
+	
+	\testctable{isOnSameRack}{NetworkTopologyImpl}{integration test}{\bookkeeper} {
+			\tcell{null,null} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{Entrambi gli argomenti sono null}
+		\newtrow
+			\tcell{null, Node(/europe/\\it/lazio/roma/rack-1\\/bookie-1")} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{Primo argomento è null}
+		\newtrow
+			\tcell{Node(/europe/\\it/lazio/roma/rack-1\\/bookie-1"), null} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{Secondo argomento è null}
+		\newtrow
+			\tcell{Node(/europe/\\it/lazio/roma/rack-1/\\bookie-14"),\\ Node(/europe/\\it/lazio/roma/rack-1\\/bookie-1")} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{Il primo nodo non esiste nel cluster}
+		\newtrow
+			\tcell{Node(/europe/\\it/lazio/roma/rack-1/\\bookie-1"),\\ Node(/europe/\\it/lazio/roma/rack-1\\/bookie-14")} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{Il secondo nodo non esiste nel cluster}
+		\newtrow
+			\tcell{null, Node(/europe/\\it/lazio/roma/rack-1\\/bookie-14")} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{Primo arg null e secondo nodo\\ non esistente}
+		\newtrow
+			\tcell{Node(/europe/\\it/lazio/roma/rack-1\\/bookie-14"), null} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{Secondo argomento è null}
+		\newtrow
+			\tcell{Node(/europe/\\it/lazio/roma/rack-1\\/bookie-14"),\\ Node(/europe/\\it/lazio/roma/rack-1\\/bookie-14")} &
+			\tcell{IllegalArgumentException viene lanciata} &
+			\tcell{Primo e secondo nodo non\\ esistono nel cluster}
+		\newtrow
+			\tcell{Node(/europe/\\it/lazio/roma/rack-1\\/bookie-1"),\\ Node(/europe/\\it/lazio/roma/rack-1\\/bookie-2")} &
+			\tcell{Ritorno valore true} &
+			\tcell{Nodi esistenti nel cluster\\ e sullo stesso rack (rack-1)}
+		\newtrow
+			\tcell{Node(/europe/\\it/lazio/roma/rack-1\\/bookie-2"),\\ Node(/europe/\\it/lazio/roma/rack-2\\/bookie-3")} &
+			\tcell{Ritorno valore false} &
+			\tcell{Nodi esistenti nel cluster\\ ma su due rack diversi}
+		\newtrow
+	}
+	
+	\makepicture{16cm}{3.5cm}{bk/failsafe-summary-it}
+		{Failsafe summary dell'integration test}
 	
 \end{document}
