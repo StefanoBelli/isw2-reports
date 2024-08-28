@@ -1186,7 +1186,9 @@
 	annotato con before nella quale viene eseguito WindowedBoltExecutor.execute per ogni tupla indicata nella motivazione.
 	La notazione $o(k)$ indica l'istanza di un oggetto Tuple con un campo identificativo (chimato "id") al quale viene assegnato
 	il valore $k$, utile per distinguere le tuple in fase di verifica.
+	
 	L'esito atteso \textit{"RuntimeException viene lanciata"} indica che ci si aspetta una qualsiasi unchecked exception.
+	
 	L'esito atteso \textit{"Nessuna tupla di finestre"} indica che il risultato dell'esecuzione finale di 
 	WindowedBoltExecutor.execute non provoca alcuna invocazione di execute del bolt mocked: quando WindowedBoltExecutor effettua
 	sliding della finestra di tuple, questa viene inoltrata al bolt (che ricordiamo, è mocked) che può procedere al processamento.
@@ -1212,6 +1214,14 @@
 	
 	Stessa cosa vale per \textit{"Tre finestre di tuple: \dots"}
 	
+	Ovviamente, gli esiti attesi delle TupleWindows rispecchiano il funzionamento di una normale sliding window: ogni
+	4 tuple (per la configurazione corrente del SUT: 4 è sia lo sliding interval count che la window length) 
+	viene effettuato lo slide e quindi inviato, tramite invocazione, al bolt, la TupleWindow "passata" (tenendo in
+	considerazione sia le tuple "pre-eseguite", indicate nella motivazione dei test case, 
+	sia quella "eseguita" come vero e proprio test, indicata nell'input dei test case). 
+	In pratica, ogni 4 execute di WindowedBoltExecutor, viene invocata da quest'ultimo l'execute del bolt,
+	passandogli la finestra di tuple appena "passata"/"scaduta".
+	
 	E' stato utilizzato Mockito per mockare un BaseWindowedBolt (e verify, con i matcher per verificare invocazioni di
 	prepare/execute del bolt) e per mockare OutputCollector, TopologyContext.
 	
@@ -1222,12 +1232,15 @@
 	raggiunte in questa iterazione. La dataflow coverage del metodo prepare non è stata mostrata da badua e quindi
 	non viene inclusa. La stmt. e branch cov. della classe sono del 42\% e 33\%, per il metodo execute, le stesse metriche sono:
 	14\%, 16\%, mentre per prepare 100\%, n/a (non ci sono branch in prepare). Per la classe, la mutation coverage è del 40\%,
-	test strength del 77\% e line coverage 50\%. A livello di metodo, 2 mutanti killed su 5 per execute, 3 su 3 per prepare.
+	test strength del 77\% e line coverage 50\%. A livello di metodo, 2 mutanti killed su 6 per execute, 3 su 3 per prepare.
 	La dataflow coverage di execute è di 4 coperture di coppie def-use su 35 totali.
 	
 	\subsubsection{Seconda iterazione}
 	Si osserva, dalla pagina HTML di JaCoCo, come vi sia scarsa copertura del metodo validate, utilizzato per, appunto,
 	validare le configurazioni per il WindowedBoltExecutor.
+	
+	Per quanto riguarda il metodo execute, non viene mai coperto il caso di utilizzo di tuple con timestamp, in modo da
+	gestire la finestra di tuple in base ad un timestamp e non al conteggio del numero di tuple.
 	
 	Si vogliono aumentare le metriche relative a stmt. coverage e branch coverage dell'intera classe.
 	
@@ -1249,10 +1262,29 @@
 	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/Config.html#TOPOLOGY_BOLTS_SLIDING_INTERVAL_COUNT}
 	{TOPOLOGY\_BOLTS\_SLIDING\_INTERVAL\_COUNT}
 	
-	In figura \ref{\getpicturelabel{storm/controlflow-WindowedBoltExecutor-2}} è evidente un netto miglioramento della stmt. e
-	branch coverage della classe (risp. 59\%, 55\%), mentre in figura \ref{\getpicturelabel{storm/mutation-WindowedBoltExecutor-2}} si osserva
-	un miglioramento della strength della test suite (lncov: 62\%, mutcov: 57\%, test str.: 87\%).
+	In tabella \ref{\gettablelabel{testc}{prepare}{WindowedBoltExecutor}{2}{\storm}} sono presenti i test case aggiuntivi.
 	
+	Gli input validWinLenCount(), invalidWinLenCount(), validWinLenDuration(), validBothWinLenDurationAndSlidIntvlDuration(),
+	invalidBothWinLenAndSlidIntvlDuration(), invalidBothWinLenAndSlidIntvlCount(). Sono dei metodi creano una Map<String,Object>
+	che contiene una configurazione valida/invalida rispetto a quanto indicato (es. validWinLenCount() $\rightarrow$ mappa che
+	contiene la chiave TOPOLOGY\_BOLTS\_WINDOW\_LENGTH\_COUNT pari a 10 e la chiave TOPOLOGY\_MAX\_SPOUT\_PENDING pari a 11).
+	
+	\textbf{Estensione casi di test metodo execute}: per quanto riguarda il metodo execute, i nuovi casi di test sono
+	presenti in tabella \ref{\gettablelabel{testc}{execute}{WindowedBoltExecutor}{2}{\storm}}, la notazione e i metodi di verifica
+	sono gli stessi per l'iterazione precedente, solo che il valore passato alle tuple è un timestamp e la logica di gestione
+	delle finestre cambia perchè la window viene fatta "slittare" quando si incontra una tupla che corrisponde ad un certo
+	timestamp (e quindi tutte le tuple ricevute precedentemente, in senso temporale).
+		
+	
+	In figura \ref{\getpicturelabel{storm/controlflow-WindowedBoltExecutor-2}} è evidente un netto miglioramento della stmt. e
+	branch coverage della classe (risp. 73\%, 68\%), mentre in figura 
+	\ref{\getpicturelabel{storm/mutation-WindowedBoltExecutor-2}} si osserva
+	un miglioramento della strength della test suite (lncov: 76\%, mutcov: 67\%, test str.: 87\%).
+	In figura \ref{\getpicturelabel{storm/controlflow-execute-WindowedBoltExecutor-2}} si nota miglioramento della copertura
+	del metodo execute e in figura \ref{\getpicturelabel{storm/dataflow-execute-WindowedBoltExecutor-2}} si ha miglioramento
+	della copertura dataflow per lo stesso metodo.
+	In figura \ref{\getpicturelabel{storm/mutation-execute-WindowedBoltExecutor-2}} c'è il miglioramento del mutation score
+	(4 mutanti killed su 6)
 	In figura \ref{\getpicturelabel{storm/controlflow-validate-WindowedBoltExecutor-2}} si osserva il miglioramento della 
 	copertura del metodo di validazione utilizzato (indirettamente) da prepare.
 	
@@ -3123,12 +3155,12 @@
 				{\mutclasscaption{WindowedBoltExecutor}{1}{\storm}}
 				
 	\makepicture{16.5cm}{8cm}{storm/mutation-execute-WindowedBoltExecutor-1}
-				{\mutmethodcaption{execute}{WindowedBoltExecutor}{1}{\storm}{2}{5}}
+				{\mutmethodcaption{execute}{WindowedBoltExecutor}{1}{\storm}{2}{6}}
 	
 	\makepicture{17cm}{8cm}{storm/mutation-prepare-WindowedBoltExecutor-1}
 				{\mutmethodcaption{add}{WindowedBoltExecutor}{1}{\storm}{3}{3}}
 				
-	\makepicture{15cm}{13cm}{storm/dataflow-execute-WindowedBoltExecutor-1}
+	\makepicture{15cm}{15cm}{storm/dataflow-execute-WindowedBoltExecutor-1}
 				{\alldfcovcaption{execute}{WindowedBoltExecutor}{1}{\storm}}
 				
 	\makepicture{17cm}{9cm}{storm/second-iter-WindowedBoltExecutor-reason}
@@ -3164,15 +3196,49 @@
 			\tcell{La configurazione è invalida}
 		\newtrow
 	}
+	
+	\newpage
+	
+	\testctable{execute}{WindowedBoltExecutor}{2}{\storm}{
+			\tcell{makeTuple(1499)} &
+			\tcell{Nessuna tupla di finestre} &
+			\tcell{Nessuna pre-esecuzione del bolt\\su una tupla} 
+		\newtrow
+			\tcell{makeTuple(1499)} &
+			\tcell{Nessuna tupla di finestre} &
+			\tcell{Pre-esecuzione del bolt su tuple\\$\{o(10),o(20),o(500),o(700),o(1400)\}$} 
+		\newtrow
+			\tcell{makeTuple(1500)} &
+			\tcell{Una finestra di tuple:\\$(o(10),o(20),o(500),o(700),o(999),o(1499),$\\$o(1500))$} &
+			\tcell{Pre-esecuzione del bolt su tuple\\$\{o(10),o(20),o(500),o(700),o(999),$\\$o(1499)\}$} 
+		\newtrow
+			\tcell{makeTuple(3100)} &
+			\tcell{Due finestre di tuple:\\$(o(10),o(20),o(500),o(700),o(999),o(1500)),$\\$(o(1560),o(1700))$} &
+			\tcell{Pre-esecuzione del bolt su tuple\\$\{o(10),o(20),o(500),o(700),o(999),$\\$o(1500),o(1560),o(1700)\}$}
+		\newtrow
+			\tcell{makeTuple(3000)} &
+			\tcell{Due finestre di tuple:\\$(o(10),o(20),o(500),o(700),o(999),o(1500)),	$\\$(o(1560),o(1700),o(3000))$} &
+			\tcell{Pre-esecuzione del bolt su tuple\\$\{o(10),o(20),o(500),o(700),o(999),$\\$o(1500),o(1560),o(1700)\}$} 
+		\newtrow
+	}
 		
 	\makepicture{18cm}{0.75cm}{storm/controlflow-WindowedBoltExecutor-2}
 				{\classcfcovcaption{WindowedBoltExecutor}{2}{\storm}}
+	
+	\makepicture{18cm}{0.5cm}{storm/controlflow-execute-WindowedBoltExecutor-2}
+				{\methodcfcovcaption{execute}{WindowedBoltExecutor}{2}{\storm}}
 				
-	\makepicture{17cm}{8cm}{storm/controlflow-validate-WindowedBoltExecutor-2}
+	\makepicture{17cm}{9cm}{storm/controlflow-validate-WindowedBoltExecutor-2}
 				{\methodcfcovcaption{validate}{WindowedBoltExecutor}{2}{\storm}}
 				
 	\makepicture{17cm}{1.5cm}{storm/mutation-WindowedBoltExecutor-2}
 				{\mutclasscaption{WindowedBoltExecutor}{2}{\storm}}
+				
+	\makepicture{17cm}{8cm}{storm/mutation-execute-WindowedBoltExecutor-2}
+				{\mutmethodcaption{execute}{WindowedBoltExecutor}{2}{\storm}{4}{6}}
+				
+	\makepicture{15cm}{15.5cm}{storm/dataflow-execute-WindowedBoltExecutor-2}
+				{\alldfcovcaption{execute}{WindowedBoltExecutor}{2}{\storm}}
 	
 	\reltable{WindowedBoltExecutor}{\storm} {
 			\tcell{prepare} &
@@ -3186,13 +3252,14 @@
 			\tcell{$0.96$}
 		\newtrow
 			\tcell{execute} &
-			\tcell{$10$} &
-			\tcell{$9$} &
+			\tcell{$15$} &
+			\tcell{$14$} &
 			\tcell{$1$} &
 			\tcell{
-				tabella $\ref{\gettablelabel{testc}{execute}{WindowedBoltExecutor}{1}{\storm}}$} &
-			\tcell{\unifdist{0.1}} &
-			\tcell{$0.9$}
+				tabella $\ref{\gettablelabel{testc}{execute}{WindowedBoltExecutor}{1}{\storm}}$,
+				tabella $\ref{\gettablelabel{testc}{execute}{WindowedBoltExecutor}{2}{\storm}}$} &
+			\tcell{\unifdist{0.067}} &
+			\tcell{$0.933$}
 		\newtrow
 	}
 	
