@@ -1273,7 +1273,23 @@
 	presenti in tabella \ref{\gettablelabel{testc}{execute}{WindowedBoltExecutor}{2}{\storm}}, la notazione e i metodi di verifica
 	sono gli stessi per l'iterazione precedente, solo che il valore passato alle tuple è un timestamp e la logica di gestione
 	delle finestre cambia perchè la window viene fatta "slittare" quando si incontra una tupla che corrisponde ad un certo
-	timestamp (e quindi tutte le tuple ricevute precedentemente, in senso temporale).
+	timestamp (e quindi tutte le tuple ricevute precedentemente, in senso temporale), per la configurazione del SUT, 
+	lo sliding interval è di 1500ms, cosi come la window length. 
+	Questo significa che, ad esempio, eventi con timestamp 10, 20, 500, 1400 ricadano nella prima finestra, 
+	mentre altri eventi con timestamp 1600, 1800, 2100, 2900 nella seconda, 3000, 3100, nella terza, 
+	e così via fino a 4500ms, \dots Come per la precedente iterazione (con la differenza dell'utilizzo del timestamp di evento, 
+	e non del conteggio del num. di eventi), l'invocazione del metodo execute del bolt avviene ad ogni
+	1500ms di differenza (nella finestra appena scaduta: se l'ultimo evento è compreso nella finestra di cui effettuare 
+	sliding, viene incluso, altrimenti no, e ricade nella finestra successiva. 
+	La finestra appena scaduta viene forwardata al bolt tramite invocazione a execute)
+	Per il mocked bolt, per questa iterazione, è necessario simulare anche 
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/topology/IWindowedBolt.html#getTimestampExtractor()}
+	{getTimestampExtractor} di 
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/topology/IWindowedBolt.html}
+	{IWindowedBolt} per ritornare un 
+	\href{https://storm.apache.org/releases/2.6.2/javadocs/org/apache/storm/topology/TupleFieldTimestampExtractor.html}
+	{TupleFieldTimestampExtractor} 
+	con lo stesso nome del campo dell'iterazione precedente, in modo da non dover cambiare eccessivamente l'implementazione.
 		
 	
 	In figura \ref{\getpicturelabel{storm/controlflow-WindowedBoltExecutor-2}} è evidente un netto miglioramento della stmt. e
