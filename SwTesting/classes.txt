@@ -1,7 +1,7 @@
 BookKeeper:
-org.apache.bookkeeper.net.NetworkTopologyImpl
 org.apache.bookkeeper.bookie.BufferedChannel
+org.apache.bookkeeper.net.NetworkTopologyImpl
 
 Storm:
-org.apache.storm.windowing.WindowManager
 org.apache.storm.topology.WindowedBoltExecutor
+org.apache.storm.windowing.WindowManager
